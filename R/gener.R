@@ -2353,3 +2353,17 @@ numeric2time = function(df){
   for(i in which(cls %in% c('integer', 'numeric'))) df[,i] %<>% as.POSIXct(origin = '1970-01-01')
   return(df)
 }
+
+#' @export
+integer2numeric = function(df){
+  cls = colnames(df) %>% sapply(function(i) class(df[,i])[1])
+  for(i in which(cls %in% c('integer'))) df[,i] %<>% as.numeric
+  return(df)
+}
+
+#' @export
+logical2integer = function(df){
+  cls = colnames(df) %>% sapply(function(i) class(df[,i])[1])
+  for(i in which(cls == 'logical')) df[,i] %<>% as.integer 
+  return(df)
+}
