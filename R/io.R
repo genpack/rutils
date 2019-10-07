@@ -588,6 +588,26 @@ sql.leftjoin = function(table1, table2, by){
 }
 
 #' @export
+sql.select = function(input, ...){
+  arg = list(...)
+  if(length(arg) == 1 & inherits(arg[[1]], 'list')) arg = arg[[1]]
+  anms = names(arg)
+  
+  qry = paste0("SELECT ")
+  
+  for (i in sequence(length(arg))){
+    if(is.empty(anms[i])){
+      qry %<>% paste0(arg[[i]])
+    } else {
+      qry %<>% paste0(arg[[i]], " AS ", anms[i])
+    }
+      
+    if(i != length(arg)){qry %<>% paste0(", ")}
+  }
+  qry %>% paste0(" FROM (", input, ") ")
+}
+
+#' @export
 sql.mutate = function(input, ...){
   arg = list(...)
   if(length(arg) == 1 & inherits(arg[[1]], 'list')) arg = arg[[1]]
@@ -644,9 +664,10 @@ sql.binColumn = function(column, breaks){
 }
 
 #' @export
-sql.head = function(input, n){
-  input %>% paste('LIMIT', n)
+sql.head = function(input, n = 6){
+  'SELECT * from (' %>% paste(input, ') LIMIT', n)
 }
+
 
 
 #' @export
