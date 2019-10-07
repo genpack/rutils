@@ -2044,6 +2044,7 @@ compareTables = function(t1, t2){
 setTZ = function(time, tz){
   time %>% as.character %>% as.POSIXct(tz = tz)
   # look at lubridate::force_tz() and lubridate::with_tz()
+  # does not work for time between "2018-10-07 2:00:00" to "2018-10-07 2:59:59"
 }
 
 
