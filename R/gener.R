@@ -2373,3 +2373,22 @@ logical2integer = function(df){
 as_date = function(x){
   x %>% as.character %>% substr(1, 10)
 }
+
+#' @export
+table.unlist = function(df){
+  colnames(df) %>% sapply(function(x) df[,x] %>% class) %>% unlist -> classes
+  ctc = names(classes)[which(classes == 'list')] # ctc: columns to convert
+  for(col in ctc){
+    df %>% pull(col) %>% sapply(function(x) length(x)) -> l_col
+    rtc = which(l_col != 1)
+    if(length(rtc) > 0){
+      df$newcol   <- NA
+      df$newcol[- rtc] <- df %>% pull(col) %>% unlist
+      df[, col] <- df$newcol
+      df %<>% select(- newcol)
+    } else {
+      df[, col] %<>%  unlist
+    }  
+  }
+  return(df)
+}
