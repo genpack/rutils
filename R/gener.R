@@ -2368,3 +2368,8 @@ logical2integer = function(df){
   for(i in which(cls == 'logical')) df[,i] %<>% as.integer 
   return(df)
 }
+
+#' @export
+as_date = function(x){
+  x %>% as.character %>% substr(1, 10)
+}
