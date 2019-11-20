@@ -462,16 +462,49 @@ spark.dummify = function(tbl, ..., keep_original = T, keep_index = F){
 ################## ATHENA SQL TOOLS ###############################
 
 #' @export
+athena.buildTable = function(conn, dsName, tblName, column_types, id_columns, s3_data_path, drop_if_exists = T, format = c('parquet', 'csv')){
+  cursor = conn$cursor()
+  format = match.arg(format)
+  if(drop_if_exists){
+    # Delete existing table
+    cursor$execute("DROP TABLE if exists " %>% paste0(dsName, '.', tblName))
+  }
+  
+  column_types = c(caseid = 'string', eventType = 'STRING', eventTime = 'TIMESTAMP', variable = 'STRING', value  = 'FLOAT')
+  column_types = toupper(column_types)
+  column_types %>% names %>% tolower -> names(column_types)
+  
+  structure = paste0('(', column_types %>% names %>% paste(column_types) %>% paste(collapse = ', '), ')')
+  
+  column_types[id_columns %>% tolower] -> id_cols
+  partition    = paste0('PARTITIONED BY (', id_cols %>% names %>% paste(id_cols) %>% paste(collapse = ', '), ')')
+  whatsthis    = 'org.apache.hadoop.hive.serde2.OpenCSVSerde'
+  if(format == 'parquet'){
+    qry        = paste0("CREATE EXTERNAL TABLE ", dsName, ".", tblName, structure, " STORED AS PARQUET LOCATION '", s3_data_path, "'", " tblproperties ('parquet.compress'='SNAPPY');")
+  } else {
+    qry        = paste0("CREATE EXTERNAL TABLE ", dsName, ".", tblName, structure, " ROW FORMAT SERDE '", whatsthis, "' WITH SERDEPROPERTIES('separatorChar'=',')", " STORED AS TEXTFILE LOCATION '", s3_data_path, "'")
+  }
+  
+  cursor$execute(qry)
+}
+
+
+
+
+#' @export
 athena.buildConnection = function(bucket = "s3://aws-athena-query-results-192395310368-ap-southeast-2/", region = 'ap-southeast-2'){
   pyathena = reticulate::import('pyathena')
   pyathena$connect(s3_staging_dir = bucket, region_name = region)
 }
 
 #' @export
-athena.read_s3   = function(con, query, max_rows = 100000){
+athena.read_s3   = function(con, query, max_rows = NULL){
   pandas   = reticulate::import('pandas')
-  nrow     = pandas$read_sql(query %>% sql.nrow, con)[1,1]
-  if(nrow > max_rows) stop('The query will result a table with' %>% paste(nrow, 'rows which is higher than maximum:', max_rows))
+  if(!is.null(max_rows)){
+    nrow     = pandas$read_sql(query %>% sql.nrow, con)[1,1]
+    banned   = nrow > max_rows
+  } else banned = F
+  if(banned) stop('The query will result a table with' %>% paste(nrow, 'rows which is higher than maximum:', max_rows))
   else pandas$read_sql(query, con)
 }
 
@@ -549,31 +582,117 @@ sql.filter = function(input, ...){
   
   qry = paste0("SELECT * FROM (", input, ") WHERE ")
   for (fn in fnms){
-    if(inherits(filter[[fn]], 'character')){
-      qry %<>% paste0(fn," = '", filter[[fn]], "'")
-    } else {
-      qry %<>% paste0(fn," = ", filter[[fn]])
-    }
+    qry %<>% paste0(fn," ", filter[[fn]])
+    
     if(fn != fnms[length(fnms)]){qry %>% paste0(" AND ")}
   }
   return(qry)
 }
 
+
 # Returns the case profile containing the latest values of each variable
 # input must be in eventlog format:
-#' @export
-sql.caseProfile = function(input, caseid_col, ts_col, et_col, var_col, value_col, variables, with_times = T){
+sql.caseProfile.old = function(input, caseid_col, ts_col, et_col, var_col, value_col, variables, closure_event = 'HomeLoanClosed', with_times = T){
   cvpr = paste0("select ", caseid_col, ", ", var_col, ", max_by(", value_col, ", ", ts_col, ") as latestValue from (", input, ") group by ", caseid_col, ", ", var_col)
   cprf = sql.cast(cvpr, id_col = caseid_col, var_col = var_col, value_col = 'latestValue', variables = variables, aggregator = 'SUM')
   if(with_times){
     cptime = paste0("select ", caseid_col, "\n")
-    cptime %<>% paste0(",MIN(", ts_col, ") AS caseStartTime", "\n")
-    cptime %<>% paste0(",MAX(", ts_col, ") AS latestEventTime", "\n")
-    cptime %<>% paste0(",MAX(IF(", et_col, " = 'LoanClosed', ", ts_col, ", cast('1900-01-01' as TIMESTAMP))) as closureTime", "\n")
+    cptime %<>% paste0(",MIN(", ts_col, ") AS firstEventTime", "\n")
+    cptime %<>% paste0(",MAX(", ts_col, ") AS lastEventTime", "\n")
+    cptime %<>% paste0(",MAX(IF(", et_col, " = '", closure_event, "', ", ts_col, ", cast('1900-01-01' as TIMESTAMP))) as closureTime", "\n")
     # cptime %<>% paste0(",closureTime - caseStartTime AS LoanAge", "\n")
     cptime %<>% paste0(" from (", input, ") group by ", caseid_col)
     return(sql.leftjoin(cprf, cptime, by = caseid_col))
   } else {return(cprf)}
+}
+
+#' @export
+sql.caseProfile = function(
+  input, 
+  caseid_col    = 'caseid', 
+  eventtime_col = 'eventtime', 
+  eventtype_col = 'eventtype', 
+  attribute_col = 'variable',
+  value_col     = 'value', 
+  first_event_type = F,
+  first_event_time = F,
+  last_event_type = F,
+  last_event_time = F,
+  
+  first_event_times       = character(),
+  last_event_times        = character(),
+  first_event_attributes  = list(),
+  last_event_attributes   = list(),
+  
+  first_attribute_times  = character(),
+  last_attribute_times   = character(),
+  
+  first_attribute_values  = character(),
+  last_attribute_values   = character(),
+  
+  sum_attribute_values    = character()
+){
+  
+  script = "SELECT" %>% paste('  ','\n', caseid_col)
+  
+  if(first_event_type) {script %<>% paste0(", \n  MIN_BY(", eventtype_col, ", ", eventtime_col, ") AS firstEventType")}
+  if(first_event_time) {script %<>% paste0(", \n  MIN(", eventtime_col, ") AS firstEventTime")}
+  if(last_event_type)  {script %<>% paste0(", \n  MAX_BY(", eventtype_col, ", ", eventtime_col, ") AS lastEventType")}
+  if(last_event_time)  {script %<>% paste0(", \n  MAX(", eventtime_col, ") AS lastEventTime")}
+
+  for(event in first_event_times){
+    script %<>% paste0(", \n  MIN(IF(", eventtype_col, " = '", event, "', ", eventtime_col, ", NULL)) as ", event, '_first_time', "\n")
+  }
+
+  for(attr in first_attribute_times){
+    script %<>% paste0(", \n  MIN(IF(", attribute_col, " = '", attr, "', ", eventtime_col, ", NULL)) as ", attr, '_first_time', "\n")
+  }
+
+  for(event in last_event_times){
+    script %<>% paste0(", \n  MAX(IF(", eventtype_col, " = '", event, "', ", eventtime_col, ", NULL)) as ", event, '_last_time', "\n")
+  }
+  
+  for(attr in last_attribute_times){
+    script %<>% paste0(", \n  MAX(IF(", attribute_col, " = '", attr, "', ", eventtime_col, ", NULL)) as ", attr, '_last_time', "\n")
+  }
+  
+  for(event in first_event_attributes){
+    for(attr in event$attributes){
+      script %<>% paste0(",", "\n", "  ", "MIN_BY(", "\n", "  IF(", "  ", eventtype_col, " = '", event$type, "' AND ", attribute_col, " = '", attr, "'  ,", 
+                         value_col, ", NULL), ", "\n  IF(", "  ", eventtype_col, " = '", event$type, "' AND ", attribute_col, " = '", attr, "'",  
+                         "  ,", eventtime_col, ", NULL)) AS ", event$type, '_first_', attr, "\n")
+    }
+  }
+
+  for(event in last_event_attributes){
+    for(attr in event$attributes){
+      script %>% 
+        paste0(",", "\n", "  ", "MAX_BY(", "\n", "  IF(", eventtype_col, " = '", event$type, "' AND ", attribute_col, " = '", attr, "'  ,", 
+               value_col, ", NULL), ", "\n  IF(", eventtype_col, " = '", event$type, "' AND ", attribute_col, " = '", attr, "'", "\n",  
+               "  ,", eventtime_col, ", NULL)",") AS ", event$type, '_last_', attr, "\n")
+    }
+  }
+  
+  for(attr in first_attribute_values){
+      script %<>% paste0(",", "\n", "  ", "MIN_BY(", "\n", "  IF(", attribute_col, " = '", attr, "'  ,", 
+                         value_col, ", NULL), ", "\n  IF(", attribute_col, " = '", attr, "'  ,", 
+                         eventtime_col, ", NULL)",") AS ", "first_", attr, "\n")
+  }
+
+  for(attr in last_attribute_values){
+    script %<>% paste0(",", "\n", "  ", "MAX_BY(", "\n", "  IF(", attribute_col, " = '", attr, "'  ,", 
+                       value_col, ", NULL), ", "\n  IF(", "\n", "  ", attribute_col, " = '", attr, "'", "\n",  
+                       "  ,", eventtime_col, ", NULL)",") AS ", "last_", attr, "\n")
+  }
+
+  for(attr in sum_attribute_values){
+    script %<>% paste0(",", "\n", "  ", "SUM(", "\n", "  IF(", attribute_col, " = '", attr, "'  ,", 
+                       value_col, ", NULL) AS ", "last_", attr, "\n")
+  }
+  
+  # todo: can add more aggregator functions like mean, median, sum of latest n days, etc  ... 
+  
+  script %>% paste0("\n  ", "FROM (", input, ") GROUP BY ", caseid_col)
 }
 
 
