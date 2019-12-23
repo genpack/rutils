@@ -492,8 +492,18 @@ athena.buildTable = function(conn, dsName, tblName, column_types, id_columns, s3
 
 
 #' @export
-athena.buildConnection = function(bucket = "s3://aws-athena-query-results-192395310368-ap-southeast-2/", region = 'ap-southeast-2'){
+athena.buildConnection = function(bucket = "s3://aws-athena-query-results-xxxxxxxxxxxx-ap-southeast-2/", 
+                                  region = 'ap-southeast-2', profile = NULL, 
+                                  aws_config_path = NULL
+                                  ){
   pyathena = reticulate::import('pyathena')
+  
+  if(file.exists(aws_config_path %>% verify('character', lengths = 1, null_allowed = T))){
+    aws_config_file             = aws_config_path %>% paste("config", sep = '/')
+    aws_shared_credentials_file = aws_config_path %>% paste("credentials", sep = '/')
+    Sys.setenv(AWS_CONFIG_FILE = aws_CONFIG_FILE, AWS_SHARED_CREDENTIALS_FILE = aws_shared_credentials_file)
+  }
+  
   pyathena$connect(s3_staging_dir = bucket, region_name = region)
 }
 
@@ -510,7 +520,7 @@ athena.read_s3   = function(con, query, max_rows = NULL){
 
 #' @export
 athena.buildDataset = function(conn, dsName = 'dataset'){
-  curser = conn$cursor()
+  cursor = conn$cursor()
   qry = paste("CREATE DATABASE", dsName)
   cursor$execute(qry)
 }
@@ -687,7 +697,7 @@ sql.caseProfile = function(
 
   for(attr in sum_attribute_values){
     script %<>% paste0(",", "\n", "  ", "SUM(", "\n", "  IF(", attribute_col, " = '", attr, "'  ,", 
-                       value_col, ", NULL) AS ", "last_", attr, "\n")
+                       value_col, ", NULL)) AS ", "last_", attr, "\n")
   }
   
   # todo: can add more aggregator functions like mean, median, sum of latest n days, etc  ... 
