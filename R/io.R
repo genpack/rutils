@@ -964,7 +964,7 @@ read_table_from_columns.RData = function(path.columns, columns = NULL, filter = 
   }
   out = data.frame()
   for(cn in columns){
-    load(paste0(path.columns, cn, '.RData'))xgb$
+    load(paste0(path.columns, cn, '.RData'))
     if(!is.null(filter)){col = col[ind]}
     if(inherits(col, 'integer64')){
       col %<>% as.integer
