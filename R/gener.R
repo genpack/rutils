@@ -1896,7 +1896,7 @@ rownames2Column = function(df, colname = 'rownames', colpos = 1){
   df  = df[, nms != colname, drop = F]
   m   = ncol(df)
   assert(colpos <= m + 1, "Maximum value for colpos is " %++% (m + 1))
-  df %<>% cbind(rownames(df))
+  df %<>% cbind(rownames(df), stringsAsFactors = F)
   colnames(df) <- c(nms, colname)
   rownames(df) <- NULL
   if (colpos == m + 1){return(df)}
@@ -2392,3 +2392,25 @@ table.unlist = function(df){
   }
   return(df)
 }
+
+#' @export
+list.pull = function(lst, field, do_unlist = T, aggregator = function(x){x}){
+  lst %>% lapply(function(i) i[[field]] %>% aggregator) -> out
+  if(do_unlist) return(out %>% unlist) else return(out)
+}
+
+#' @export
+pick = function(weights){
+  weights %<>% vect.normalise %>% cumulative
+  choices = names(weights)
+  choices[which(weights > runif(1)) %>% first]
+}
+  
+# not tested  
+column_classes = function(df){
+  colnames(df) %>% sapply(function(i) class(i)[1])
+}  
+  
+  
+  
+  

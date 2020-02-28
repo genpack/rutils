@@ -814,6 +814,7 @@ sql.cast = function(input, id_col, var_col, value_col, variables, aggregator = '
 }
 
 
+################## PARQUET TOOLS ###############################
 
 parquet2calumns.old = function(path.parquet, path.columns, features){
   ons = list.fi1es(path.parquet) %>% stringr::str_remove('.snappy.parquet')
@@ -950,23 +951,23 @@ read_table_from_columns.RData = function(path.columns, columns = NULL, filter = 
     columns = ons
   } else {columns %<>% intersect(ons)}
   if(!is.null(filter)){
-    fits = names(filter)
-    assert(fns %% ons, 'Filter contains non-existing columns!')
+    fns = names(filter)
+    assert(fns %<% ons, 'Filter contains non-existing columns!')
     boolind = T
     for(cn in names(filter)){
-      load(paste0(path.columns, on, '.RData'))
-      if (!is.null(filter[[cn]]$max)) {boolind = boolind & (con <= filter[[cn]]$max)}
+      load(paste0(path.columns, cn, '.RData'))
+      if (!is.null(filter[[cn]]$max)) {boolind = boolind & (col <= filter[[cn]]$max)}
       if (!is.null(filter[[cn]]$min)) {boolind = boolind & (col >= filter[[cn]]$min)}
-      if (!is.null(filter[[cn]]$domain)) {boolind = boolind & (con %in% filter[[cn]]$domain)}
+      if (!is.null(filter[[cn]]$domain)) {boolind = boolind & (col %in% filter[[cn]]$domain)}
     }
     ind= which(boolind)
   }
   out = data.frame()
   for(cn in columns){
-    load(paste0(path.columns, cn, '.RData'))
+    load(paste0(path.columns, cn, '.RData'))xgb$
     if(!is.null(filter)){col = col[ind]}
     if(inherits(col, 'integer64')){
-      con %<>% as.integer
+      col %<>% as.integer
     }
     if(cn == columns[1]){
       out = data.frame(col)
@@ -975,4 +976,5 @@ read_table_from_columns.RData = function(path.columns, columns = NULL, filter = 
       out[cn] = col
     }
   }
+  return(out)
 }
