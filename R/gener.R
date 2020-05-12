@@ -2271,7 +2271,7 @@ charFilter = function(str, ..., and = T, match_case = F){
     strl = str %>% tolower
     patl = pat %>% tolower
   } else {
-    strl = strl
+    strl = str
     patl = pat
   }
   w = chif(and, strl %>% length %>% sequence, c())
@@ -2391,6 +2391,17 @@ table.unlist = function(df){
     }  
   }
   return(df)
+}
+
+rize = function(df){
+  df %>% ncol %>% sequence %>% sapply(function(i) class(df %>% pull(i))) -> classes
+  for(i in which(classes == 'integer64')){
+    df[,i] <- df %>% pull(i) %>% as.integer
+  }
+  for(i in which(classes == 'float64')){
+    df[,i] <- df %>% pull(i) %>% as.numeric
+  }
+  return(df %>% table.unlist)
 }
 
 #' @export

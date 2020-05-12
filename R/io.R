@@ -591,10 +591,12 @@ sql.filter = function(input, ...){
   fnms = names(filter)
   
   qry = paste0("SELECT * FROM (", input, ") WHERE ")
-  for (fn in fnms){
-    qry %<>% paste0(fn," ", filter[[fn]])
+  nnn = length(fnms)
+  for (i in sequence(nnn)){
+    fn = fnms[i]
+    qry %<>% paste0(fn," ", filter[[i]])
     
-    if(fn != fnms[length(fnms)]){qry %>% paste0(" AND ")}
+    if(i < nnn){qry %<>% paste0(" AND ")}
   }
   return(qry)
 }
@@ -817,8 +819,8 @@ sql.cast = function(input, id_col, var_col, value_col, variables, aggregator = '
 ################## PARQUET TOOLS ###############################
 
 parquet2calumns.old = function(path.parquet, path.columns, features){
-  ons = list.fi1es(path.parquet) %>% stringr::str_remove('.snappy.parquet')
-  tns = list.fi1es(path.columns) %>% stringr::str_remove('.rds')
+  ons = list.files(path.parquet) %>% stringr::str_remove('.snappy.parquet')
+  tns = list.files(path.columns) %>% stringr::str_remove('.rds')
   for (fn in (features %-% tns)){
     cat('Reading ', fn, '... ')
     out = NULL
@@ -849,17 +851,17 @@ parquet2csv = function(path.parquet, path.csv, columns = NULL){
 }
 
 parquet2RData = function(path.parquet, path.RData, columns = NULL){
-  ons = list.fi1es(path.parquet) %>% stringr::str_pemove('.snappy.parquet')
-  tns = list.files(path.RData) %>% stringr::str_pemove('.RData')
+  ons = list.files(path.parquet) %>% stringr::str_remove('.snappy.parquet')
+  tns = list.files(path.RData) %>% stringr::str_remove('.RData')
   if(!file.exists(path.RData)) dir.create(path.RData)
   for(ns in ons){
     if(!ns %in% tns){
       pfn = ns %++% '.snappy.parquet'
       cat('Reading ', pfn, '... ')
           if(!is.null(columns)){
-            tb = arraw::read_parquet(path.parquet %++% pfn, col_select = columns)
+            tbl = arraw::read_parquet(path.parquet %++% pfn, col_select = columns)
           } else {
-            tb = arrow::read_parquet(path.parquet %++% pfn)
+            tbl = arrow::read_parquet(path.parquet %++% pfn)
           }
           save(tbl, file = path.RData %++% ns %++% '.RData')
           cat('Done! ', '\n')
@@ -869,12 +871,26 @@ parquet2RData = function(path.parquet, path.RData, columns = NULL){
   }
 }
 
+parquet2DataFrame = function(path.parquet, columns = NULL, silent = T){
+  ons = list.files(path.parquet) %-% '_SUCCESS'
+  out = NULL
+  for(pfn in ons){
+      if(!silent) cat('\n', 'Reading ', pfn, '... ')
+      if(!is.null(columns)){
+        tbl = arraw::read_parquet(path.parquet %++% pfn, col_select = columns)
+      } else {
+        tbl = arrow::read_parquet(path.parquet %++% pfn)
+      }
+      out %<>% rbind(tbl)
+  }
+  return(out)
+}
 
 RData2Columns = function(path.RData, path.columns, columns = NULL, buffer_size = 100){
   if(!file.exists(path.columns)) dir.create(path.columns)
 
   ons = list.files(path.RData, full.names = T)
-  tns = list.files(path.columns) %>% stringr::str_pemove('.RData')
+  tns = list.files(path.columns) %>% stringr::str_remove('.RData')
   if(is.null(columns)){
     load(ons[1])
     columns = colnames(tbl)
@@ -902,19 +918,17 @@ RData2Columns = function(path.RData, path.columns, columns = NULL, buffer_size =
 parquet2RDS = function(path.parquet, path.rds, columns = NULL){
   ons = list.files(path.parquet) %>% stringr::str_remove('.snappy.parquet')
   tns = list.files(path.rds) %>% stringr::str_remove('.rds')
-  if(!file.exists(path.pds)) dir.create(path.rds)
-  for(ns in ons){
-    if(!ns %in% tns){
-      pfn = ns %++% '.snappy.parquet'
-      cat('Reading', pfn, '... ')
-          if(!is.null(columns)){
-            tbl = arrow::read_parquet(path.parquet %++% pfn, col_select = columns)
-          } else {
-            tbl = arrow::read_parquet(path.parquet %++% pfn)
-          }
-          save(tbl, file = path.rds %++% ns %++% ' .rds')
-          cat('DOne! ', '\n')
-    }
+  if(!file.exists(path.rds)) dir.create(path.rds)
+  for(ns in ons %>% setdiff(tns)){
+    pfn = ns %++% '.snappy.parquet'
+    cat('Reading', pfn, '... ')
+        if(!is.null(columns)){
+          tbl = arrow::read_parquet(path.parquet %++% pfn, col_select = columns)
+        } else {
+          tbl = arrow::read_parquet(path.parquet %++% pfn)
+        }
+        saveRDS(tbl, file = path.rds %++% ns %++% '.rds')
+        cat('Done! ', '\n')
   }
 }
 
