@@ -10,6 +10,8 @@
 # 1.2.0     28 October 2016      Function vect.shift.up() added
 # 1.2.1     16 March 2017        Function mat.profile() added
 # 1.2.3     05 July 2018         Function column.shift.up() column.shift.down() modified
+# 1.3.0     14 May 2020          Functions column.feed.forward(), column.feed.backward(), vect.feed.forward(), vect.feed.backward() added
+# 1.3.1     15 May 2020          Functions column.cumulative.forward(), column.cumulative.backward(), vect.cumulative.forward(), vect.cumulative.backward() added
 
 
 #' @export
@@ -88,6 +90,88 @@ column.average.down <- function(A, col=1:dim(A)[2], k=1, keep.rows=FALSE){
     return(V[(-1):(-k),])
   }
 }
+
+
+#' Feeds each missing value with the value of its previous element. Order input vector appropriately brfore calling this function.
+#' @export
+vect.feed.forward = function(v, index = sequence(length(v))){
+  wna = intersect(index, which(is.na(v))) %-% 1
+  for(i in wna){
+    v[i] <- v[i - 1]
+  }
+  v
+}
+
+#' Feeds missing values of each row with the values of its previous row. Order columns appropriately brfore calling this function.
+#' If id_col is specified, then the table is grouped by that column before 
+#' Input tbl is a table: data.frame, tibble or matrix
+#' @export
+column.feed.forward = function(tbl, col = 1, id_col = NULL){
+  if(is.null(id_col)){dup = tbl %>% nrow %>% sequence} else {dup = tbl %>% pull(id_col) %>% duplicated %>% which}
+  for(j in col){
+    tbl[, j] <- tbl %>% pull(j) %>% vect.feed.forward(index = dup)
+  }
+  tbl
+}  
+
+#' Feeds each missing value with the value of its next element. Order input vector appropriately brfore calling this function.
+#' @export
+vect.feed.backward = function(v, index = sequence(length(v)) %>% rev){
+  wna = intersect(index, which(is.na(v))) %-% length(v)
+  for(i in wna){
+    v[i] <- v[i + 1]
+  }
+  v
+}
+
+#' Feeds missing values of each row with the values of its next row. Order columns appropriately brfore calling this function.
+#' If id_col is specified, then the table is grouped by that column before 
+#' Input tbl is a table: data.frame, tibble or matrix
+#' @export
+column.feed.backward = function(tbl, col = 1, id_col = NULL){
+  if(is.null(id_col)){dup = tbl %>% nrow %>% sequence %>% rev} else {dup = tbl %>% pull(id_col) %>% rev %>% duplicated %>% which; dup = nrow(tbl) - dup + 1}
+  for(j in col){
+    tbl[, j] <- tbl %>% pull(j) %>% vect.feed.backward(index = dup)
+  }
+  tbl
+}  
+
+#' @export
+vect.cumulative.forward = function(v, index = sequence(length(v))){
+  for(i in (index %-% 1)){
+    v[i] <- v[i] + v[i - 1]
+  }
+  v
+}
+
+#' @export
+vect.cumulative.backward = function(v, index = sequence(length(v)) %>% rev){
+  for(i in (index %-% length(v))){
+    v[i] <- v[i] + v[i + 1]
+  }
+  v
+}
+
+
+column.cumulative.forward = function(tbl, col = 1, id_col = NULL, aggregator = cumsum){
+  # if(is.null(id_col)){dup = tbl %>% nrow %>% sequence %>% setdiff(1)} else {dup = tbl %>% pull(id_col) %>% duplicated %>% which}
+  for(j in col){
+    # tbl[, j] <- tbl %>% pull(j) %>% vect.cumulative.forward(index = dup)
+    tbl[, j] <- tbl %>% pull(j) %>% ave(id = tbl %>% pull(id_col), FUN = aggregator)
+  }
+  tbl
+}  
+
+#' @export
+column.cumulative.backward = function(tbl, col = 1, id_col = NULL, aggregator = cumsum){
+  # if(is.null(id_col)){dup = tbl %>% nrow %>% sequence %>% rev} else {dup = tbl %>% pull(id_col) %>% rev %>% duplicated %>% which; dup = nrow(tbl) - dup + 1}
+  for(j in col){
+    # tbl[, j] <- tbl %>% pull(j) %>% vect.cumulatiive.backward(index = dup)
+    tbl[, j] <- tbl %>% pull(j) %>% rev %>% ave(id = tbl %>% pull(id_col) %>% rev, FUN = aggregator) %>% rev
+    
+  }
+  tbl
+}  
 
 #' @export
 regslope <- function(y){
@@ -349,4 +433,58 @@ geomean = function(v, na.rm = T){
 magnitude = function(v, na.rm = T){
   v^2 %>% as.numeric %>% sum(na.rm = na.rm) %>% sqrt
 }
+
+# Only works on numeric or integer vectors
+# Argument 'quant_cut' must be between 0 and 1,
+# Argument 'sd_cut' is usually around 3 or 4
+vect.treat_outliers = function(v, sd_cut = NULL, quant_cut = NULL, right = T, left = T, action = c('trim', 'remove', 'na', 'adapt'), numerics_only = F){
+  action = match.arg(action)
+  vclass = chif(numerics_only, 'numeric', c('numeric', 'integer'))
+  if(!inherits(v, vclass)) return(v)
+  
+  if(!is.null(sd_cut)){
+    mu = mean(v, na.rm = T)
+    sg = sd(v, na.rm = T)
+    ul = mu + sd_cut*sg
+    ll = mu - sd_cut*sg
+  } else if(!is.null(quant_cut)){
+    ul = quantile(v, probs = 1.0 - quant_cut)
+    ll = quantile(v, probs = quant_cut)
+  } else {
+    ul = max(v, na.rm = T)
+    ll = min(v, na.rm = T)
+    cat( '\n', 'No quant_cut or sd_cut specified, no outliers detected!', '\n')
+  }
+  
+  too_high = which(v > ul)
+  too_low  = which(v < ll)
+  
+  if(right & (length(too_high) > 0)){
+    switch(action,
+           'trim' = {v[too_high] <- ul},
+           'remove' = {v[too_high] = NA},
+           'na'     = {v[too_high] = NA},
+           'adapt'  = {v[too_high] <- ul + log(1.0 + v[too_high] - ul)})
+  }
+  
+  if(left & (length(too_low) > 0)){
+    switch(action,
+           'trim' = {v[too_low] <- ll},
+           'remove' = {v[too_low] = NA},
+           'na'     = {v[too_low] = NA},
+           'adapt'  = {v[too_low] <- ll - log(1.0 + ll - v[too_low])})
+  }
+  
+  if(action == 'remove') v %<>% na.omit
+  
+  return(v)
+}
+
+treat_outliers = function(X, ...){
+  X %>% ncol %>% sequence %>% sapply(function(i) {class(X[,i])[1]}) -> clss
+  wn = which(clss %in% c('numeric', 'integer'))
+  X[, wn] = X[, wn, drop = F] %>% as.matrix %>% apply(2, vect.treat_outliers, ...)
+  X
+}
+
 

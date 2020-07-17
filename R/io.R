@@ -415,7 +415,7 @@ spark.mutate = function(tbl, ...){
 #' @export
 spark.select = function(tbl, ...){
   ns = c(...) %>% verify('character') %>% intersect(colnames(tbl))
-  if(length(ns) == 0){return(tbl)}
+  if(length(ns) == 0){return(tbl[c()])}
   scr = paste0("tbl %>% dplyr::select(", ns %>% paste(collapse = ' , '), ")")
   parse(text = scr) %>% eval
 }
@@ -859,7 +859,7 @@ parquet2RData = function(path.parquet, path.RData, columns = NULL){
       pfn = ns %++% '.snappy.parquet'
       cat('Reading ', pfn, '... ')
           if(!is.null(columns)){
-            tbl = arraw::read_parquet(path.parquet %++% pfn, col_select = columns)
+            tbl = arrow::read_parquet(path.parquet %++% pfn, col_select = columns)
           } else {
             tbl = arrow::read_parquet(path.parquet %++% pfn)
           }
@@ -877,9 +877,9 @@ parquet2DataFrame = function(path.parquet, columns = NULL, silent = T){
   for(pfn in ons){
       if(!silent) cat('\n', 'Reading ', pfn, '... ')
       if(!is.null(columns)){
-        tbl = arraw::read_parquet(path.parquet %++% pfn, col_select = columns)
+        tbl = arrow::read_parquet(path.parquet %>% paste(pfn, sep = '/'), col_select = columns)
       } else {
-        tbl = arrow::read_parquet(path.parquet %++% pfn)
+        tbl = arrow::read_parquet(path.parquet %>% paste(pfn, sep = '/'))
       }
       out %<>% rbind(tbl)
   }
@@ -933,7 +933,7 @@ parquet2RDS = function(path.parquet, path.rds, columns = NULL){
 }
 
 
-RDD2Columns = function(path.rds, path.columns, columns = NULL, buffer_size = 100){
+RDS2Columns = function(path.rds, path.columns, columns = NULL, buffer_size = 100){
   if(!file.exists(path.columns)) dir.create(path.columns)
   ons = list.files(path.rds, full.names = T)
   tns = list.files(path.columns) %>% stringr::str_remove('.rds')
@@ -992,3 +992,98 @@ read_table_from_columns.RData = function(path.columns, columns = NULL, filter = 
   }
   return(out)
 }
+
+
+################## WIDE TABLES: ##################
+TABLE.WIDE = setRefClass(
+  'TABLE.WIDE', 
+  fields  = list(name = "character", path = "character", meta = 'data.frame', data = 'list', numrows = 'integer', numcols = 'integer', size_limit = "numeric"), 
+  methods = list(
+    initialize = function(...){
+      callSuper(...)
+      if(is.empty(name)){name <<- paste0('WIDE', sample(10000:99999, 1))}
+      if(is.empty(size_limit)){size_limit <<- 10^9}
+      if(is.empty(path)){path <<- '.'}
+      assert(file.exists(path), 'Given path does not exist!')
+      dir.create(path %>% paste(name, sep = '/'))
+    },
+    
+    save_table = function(tn){
+      assert(!is.null(data[[tn]]), 'Given table name does not exist in memory.')
+      
+      saveRDS(data[[tn]], paste0(path, '/', name, '/', tn, '.rds'))
+    },
+    
+    add_table = function(df){
+      "Adds a new table to the list of tables"
+      if(is.empty(numrows)){numrows <<- nrow(df)} else {assert(nrow(df) == numrows, paste('Added table must have exactly', numrows, 'rows,', 'but', 'has', nrow(df), '!'))}
+      ctbr = colnames(df) %^% meta$column
+      if(length(ctbr) > 0){
+        cat('\n', 'Warning: ', length(ctbr), ' columns found among existing tables and removed!')
+        df = df[colnames(df) %-% ctbr]
+      }
+      
+      tblname = paste0('T', sample(10000:99999, 1))
+      classes = colnames(df) %>% sapply(function(cn) df %>% pull(cn) %>% class %>% first) %>% unname
+      meta %>% rbind(
+        data.frame(column = colnames(df), class = classes, table = tblname, filename = paste(tblname, 'rds', sep = '.'))
+      ) ->> meta
+      data[[tblname]] <<- df
+      numcols <<- numcols + ncol(df)
+      save_table(tblname)
+    },
+    
+    load_table = function(tn){
+      if(is.null(data[[tn]])){
+        readRDS(paste0(path, '/', name, '/', tn, '.rds')) ->> data[[tn]]
+      }
+      return(data[[tn]])
+    },
+    
+    control_size = function(){
+      while(object.size(data) > size_limit){
+        data[[1]] <<- NULL
+      }
+    }
+  ))
+
+# Generic Functions:
+setMethod("names", "TABLE.WIDE", function(x) x$meta$column %>% unique)
+setMethod("colnames", "TABLE.WIDE", function(x) x$meta$column %>% unique)
+setMethod("nrow", "TABLE.WIDE", function(x) x$numrows)
+setMethod("ncol", "TABLE.WIDE", function(x) x$meta$column %>% unique %>% length)
+
+
+# setMethod("head", "TIME.SERIES", function(x, ...) head(x$data, ...))
+# setMethod("tail", "TIME.SERIES", function(x, ...) tail(x$data, ...))
+setMethod("dim", "TABLE.WIDE", function(x) c(x$numrows, x$numcols))
+# setMethod("colSums", "TIME.SERIES", function(x) colSums(x$data))
+# setMethod("rowSums", "TIME.SERIES", function(x) rowSums(x$data))
+# setMethod("length", "TIME.SERIES", function(x) length(x$time))
+# setMethod("show", "TIME.SERIES", function(object) show(object$data))
+
+
+
+'[.TABLE.WIDE'   = function(obj, period = NULL, figures = NULL){
+  if(is.null(figures)){
+    if(inherits(period, 'chracter')){
+      figures = period
+      period  = NULL
+    } else {
+      figures = colnames(obj)
+    }
+  }
+  if(is.null(period)){period = sequence(obj$numrows)}
+  if(inherits(figures, 'integer')){figures = obj$meta$column[figures]} 
+  else verify(figures, 'character', domain = obj$meta$column)
+  
+  obj$meta %>% filter(column %in% figures) %>% pull(table) %>% unique -> tables
+  out = NULL
+  for(tn in tables){
+    df = obj$load_table(tn)
+    df = df[colnames(df) %^% figures]
+    if(is.null(out)) {out = df} else {out %<>% cbind(df)}
+  }
+  return(out)
+}
+

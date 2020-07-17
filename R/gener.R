@@ -472,12 +472,12 @@ verify <- function(var, allowed = NULL, domain = NULL, lengths = NULL, dims = NU
   if (!is.null(domain)){
     # assert(class(domain) %in% clsv, "Argument 'domain' should have the same class as argument 'var'!", err_src = "gener::verify")
     if (inherits(domain, c('character', 'factor', 'logical'))){
-      if(fix){fail = F; var = var[which(var %in% domain)]} else {fail = sum(!(var %in% domain), na.rm = T) > 0}
+      if(fix){fail = F; var = var[which(var %in% domain)]} else {fail = !(var %in% domain)}
     }
     else if (inherits(domain, c('numeric', 'integer', valid.time.classes))){
       if(fix){fail = F; var = ifelse(var < domain[1], domain[1], ifelse(var > domain[2], domain[2], var))}
       else {
-        fail = sum((var < domain[1]) | (var > domain[2]), na.rm = T) > 0
+        fail = (var < domain[1]) | (var > domain[2])
       }
     }
     else {
@@ -485,7 +485,7 @@ verify <- function(var, allowed = NULL, domain = NULL, lengths = NULL, dims = NU
       stop(err.domain.class, call. = F)
     }
     
-    if (fail) {
+    if (sum(fail, na.rm = T) != 0) {
       err.domain.fail  = make.err.msg(paste("domain verification failed! \n", "Argument ", varname, " must be in domain (", paste(domain, collapse = ' , '), ") \n",
                                             " Item(s): ", paste(var[fail], collapse = ' , ') ," were not in domain!") , err_src = err_src)
       stop(err.domain.fail, call. = F)
@@ -793,6 +793,7 @@ mat.unclean <- function(M, x = 0){
 }
 
 
+# Should be removed
 #' @export
 cumulative = function(v, by.row = T){
   verify(v, c('matrix', 'data.frame', 'numeric', 'integer', 'logical'), varname = 'v', null_allowed = F)
@@ -1290,7 +1291,12 @@ repeat.col <- function(v, n){
 
 #' @export
 '%^%' = function(obj1, obj2){
-  intersect(obj1, obj2)
+  if(inherits(obj1, 'matrix')){
+    library(expm)
+    obj1 %^% obj2
+  } else {
+    intersect(obj1, obj2)
+  }
 }
 
 #' @export
@@ -1946,6 +1952,11 @@ na2zero = function(v){
   return(v)
 }
 
+#' @export
+zero2na = function(v){
+  v[v == 0] <- NA
+  return(v)
+}
 
 #' @export
 trim = function(v, lb = 0, ub = Inf){
