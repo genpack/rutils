@@ -1094,20 +1094,6 @@ list.extend <- function(v, N){
   return (c(ve, v %>% list.extract(sequence(N - length(ve)))))
 }
 
-
-#' Returns the most frequent element of given vector \code{v}
-#' @param v Vector
-#' @return The most frequent element of given vector \code{v}
-#' @export
-most.common <- function(v){
-  tbl = table(v)
-  nms = names(tbl)
-  mc  = nms[order(tbl, decreasing = T)[1]]
-  if (is.null(mc)){mc = NA}
-  return(mc)
-}
-
-
 #' @export
 date.adjust = function(x, t, zone = "GMT"){
   t = as.POSIXlt(t, tz = zone)
@@ -1557,8 +1543,13 @@ prettyDate = function(x){
 #' @return vector of characters containing numeric column labels of the given table
 #' @export
 numerics = function(df){
-  classes = sapply(df, class)
-  classes[classes %in% c('numeric', 'integer', 'double', 'difftime')] %>% names
+  numer_classes = c('numeric', 'integer', 'double', 'difftime')
+  if(inherits(df, 'WIDETABLE')){
+    return(df$meta %>% filter(class %in% numer_classes) %>% pull(column))
+  } else if(inherits(df, 'data.frame')){
+    classes = sapply(df, class)
+    return(classes[classes %in% numer_classes] %>% names)
+  }
 }
 
 #' Returns nominal(categorical) column labels of a data frame
@@ -1566,8 +1557,13 @@ numerics = function(df){
 #' @return vector of characters containing nominal column labels of the given table
 #' @export
 nominals = function(df){
-  classes = sapply(df, class)
-  classes[classes %in% c('factor', 'character', 'logical', 'ordered', 'integer')] %>% names
+  nomin_classes = c('factor', 'character', 'logical', 'ordered', 'integer')
+  if(inherits(df, 'WIDETABLE')){
+    return(df$meta %>% filter(class %in% nomin_classes) %>% pull(column))
+  } else if(inherits(df, 'data.frame')){
+    classes = sapply(df, class)
+    return(classes[classes %in% nomin_classes] %>% names)
+  }
 }
 
 #' Returns labels of the columns of the given data frame containing date-time values
@@ -1945,9 +1941,23 @@ unname = function(v){
   v
 }
 
+#' @export
+na2value = function(v, val = 0){
+  if(inherits(v, 'WIDETABLE')){
+    v$fill_na_with(val)
+    return(v)
+  }
+  v[is.na(v)] <- val
+  return(v)
+}
+
 
 #' @export
 na2zero = function(v){
+  if(inherits(v, 'WIDETABLE')){
+    v$fill_na_with(0, cols = colnames(v))
+    return(v)
+  }
   v[is.na(v)] <- as.integer(0)
   return(v)
 }
@@ -2056,6 +2066,22 @@ setTZ = function(time, tz){
   time %>% as.character %>% as.POSIXct(tz = tz)
   # look at lubridate::force_tz() and lubridate::with_tz()
   # does not work for time between "2018-10-07 2:00:00" to "2018-10-07 2:59:59"
+}
+
+
+add_month = function(monthstr, num = 1){
+  mn = monthstr %>% substr(6,7) %>% as.integer
+  mn = mn + num
+  yr = monthstr %>% substr(1,4) %>% as.integer
+  while(mn > 12){mn = mn - 12; yr = yr + 1}
+  while(mn < 1 ){mn = mn + 12; yr = yr - 1}
+  
+  paste(yr, mn %>% stringr::str_pad(2, pad = "0"), '01', sep = '-')
+} 
+
+add_year = function(monthstr, num = 1){
+  paste(monthstr %>% substr(1,4) %>% as.integer %>% {. + num}, 
+        monthstr %>% substr(6,7), '01', sep = '-')
 }
 
 
@@ -2434,5 +2460,21 @@ column_classes = function(df){
 }  
   
   
-  
+aggr = function(x, id.cols, measure.cols, aggregator = 'mean') {
+  args_1 = id.cols %>% paste(collapse = ',')
+  args_2 = "%s = %s(%s, na.rm = T)" %>% sprintf(measure.cols, aggregator, measure.cols) %>% paste(collapse = ',')
+  parse(text = "dplyr::summarise(dplyr::group_by(x, %s) , %s)" %>% sprintf(args_1, args_2)) %>% eval
+} 
+
+# Returns th most frequent item (best to be used for nominals)
+#' Returns the most frequent element of given vector \code{v}
+#' @param v Vector
+#' @param na.rm Logical Should missing values be removed?
+#' @return The most frequent element of given vector \code{v}
+#' @export
+most_frequent <- function(v, na.rm = F) {
+  if(na.rm) v %<>% na.omit 
+  uv <- unique(v)
+  uv[which.max(tabulate(match(v, uv)))]
+}
   
