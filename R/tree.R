@@ -1,7 +1,7 @@
 # package gener:
 
 # Header
-# Filename:     nibetree.R
+# Filename:     tree.R
 # Description:  Defines a standard Tree structure used for various purposes
 
 # Version   Date               Action

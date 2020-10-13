@@ -1,4 +1,4 @@
-Package: gener
+Package: rutils
 Type: Package
 Title: A library of useful general functions in R
 Version: 3.0.9
@@ -13,8 +13,7 @@ License: MIT
 LazyData: TRUE
 Collate: 
     'clust.R'
-    'nibetree.R'
-    'io.R'
+    'tree.R'
     'linalg.R'
-    'gener.R'
+    'rutils.R'
 RoxygenNote: 6.1.1

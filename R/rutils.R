@@ -1,5 +1,5 @@
 # Header
-# Filename:     gener.R
+# Filename:     rutils.R
 # Description:  Contains some general functions useful for R programming
 # Author:       Nicolas Berta 
 # Email :       nicolas.berta@gmail.com
@@ -64,7 +64,7 @@
 # 1.8.7     22 August 2017     Function toVectorList() added
 # 1.8.9     28 August 2017     nibetree.R updated to version 0.0.2
 # 2.2.2     21 September 2017  clust.R added to the package
-# 2.2.3     27 October 2017    Function compareTables() added to gener.R
+# 2.2.3     27 October 2017    Function compareTables() added to rutils.R
 # 2.2.4     30 October 2017    Function compareTables() modified: small bugs fixed regarding notrig flag
 # 2.2.5     31 October 2017    Function check() modified: You can pass any argument to this function
 # 2.2.6     01 November 2017   Function swap() modified: Works for data.frame and matrix as well as list
@@ -308,7 +308,7 @@ warnif <- function(flag, wrn_msg, wrn_src = NULL){
 #' Some error message
 #'
 #' @export
-make.err.msg <- function(err_msg = '', err_src = 'gener::make.err.msg'){
+make.err.msg <- function(err_msg = '', err_src = 'rutils::make.err.msg'){
   if (typeof(err_src) == "language"){err_src = as.character(as.expression(err_src))}
   paste0('\n from ', err_src, ':', '\n', '\n',
          #repeat.char('-',9 + nchar(err_src)),'\n', '\n',
@@ -470,7 +470,7 @@ verify <- function(var, allowed = NULL, domain = NULL, lengths = NULL, dims = NU
   }
   
   if (!is.null(domain)){
-    # assert(class(domain) %in% clsv, "Argument 'domain' should have the same class as argument 'var'!", err_src = "gener::verify")
+    # assert(class(domain) %in% clsv, "Argument 'domain' should have the same class as argument 'var'!", err_src = "rutils::verify")
     if (inherits(domain, c('character', 'factor', 'logical'))){
       if(fix){fail = F; var = var[which(var %in% domain)]} else {fail = !(var %in% domain)}
     }
@@ -541,7 +541,7 @@ verify.new <- function(var, allowed = NULL, domain = NULL, lengths = NULL, dims 
   
   # Check to see if var is in domain:
   if(!errcode & !is.null(domain)){
-    # assert(class(domain) %in% clsv, "Argument 'domain' should have the same class as argument 'var'!", err_src = "gener::verify")
+    # assert(class(domain) %in% clsv, "Argument 'domain' should have the same class as argument 'var'!", err_src = "rutils::verify")
     if (inherits(domain, c('character', 'factor', 'logical', 'integer'))){
       if(sum(!(var %in% domain), na.rm = T) > 0){
         if(fix){var = var[which(var %in% domain)]}
@@ -567,7 +567,7 @@ verify.new <- function(var, allowed = NULL, domain = NULL, lengths = NULL, dims 
       }
     }
     
-    else {stop(make.err.msg(paste("Argument 'domain' is of class", class(domain)[1], " which is not supported!"), err_src = 'gener::verify'))}
+    else {stop(make.err.msg(paste("Argument 'domain' is of class", class(domain)[1], " which is not supported!"), err_src = 'rutils::verify'))}
   }
   
   # Check to see if var lengths matches requirements:
@@ -1668,7 +1668,7 @@ vec2Col = function(v, base = c(red = 1, green = 1, blue = 1)){
 #' @export
 color.mean = function(...){
   mn = (try(c(...) %>% col2rgb, silent = T) %>%
-          verify(err_msg = 'Invalid colors given! Cannot convert to rgb.', err_src = 'gener::color.mean') %>%
+          verify(err_msg = 'Invalid colors given! Cannot convert to rgb.', err_src = 'rutils::color.mean') %>%
           rowMeans)/255
   rgb(red = mn['red'], green = mn['green'], blue = mn['blue'])
 }
@@ -1758,8 +1758,8 @@ coerce = function(v, class_name, ...){
     scr = paste0('as.', class_name, '(v, ...)')
     nms = names(v)
     if(inherits(v, 'POSIXct') & class_name == 'Date'){v %<>% lubridate::force_tz('GMT')}
-    out = try(eval(parse(text = scr)), silent = T) %>% verify(err_msg = errmsg, err_src = 'gener::coerce')
-    assert(inherits(out, class_name), err_msg = errmsg, err_src = 'gener::coerce')
+    out = try(eval(parse(text = scr)), silent = T) %>% verify(err_msg = errmsg, err_src = 'rutils::coerce')
+    assert(inherits(out, class_name), err_msg = errmsg, err_src = 'rutils::coerce')
     if(!is.null(nms)){names(out) <- nms}
     return(out)
   } else {return(v)}
@@ -2110,10 +2110,10 @@ is.holiday = function(d, holidays = c()){
 #' @export
 diffDate <- function(d1, d2, holidays = c()) {
   mm = max(length(d1), length(d2))
-  d1 = try(as.Date(d1), silent = T) %>% verify('Date', err_msg = "Could not convert argument 'd1' to date", err_src = 'gener::diffDate') %>% vect.extend(mm)
-  d2 = try(as.Date(d2), silent = T) %>% verify('Date', err_msg = "Could not convert argument 'd2' to date", err_src = 'gener::diffDate') %>% vect.extend(mm)
+  d1 = try(as.Date(d1), silent = T) %>% verify('Date', err_msg = "Could not convert argument 'd1' to date", err_src = 'rutils::diffDate') %>% vect.extend(mm)
+  d2 = try(as.Date(d2), silent = T) %>% verify('Date', err_msg = "Could not convert argument 'd2' to date", err_src = 'rutils::diffDate') %>% vect.extend(mm)
   if(is.empty(d1) | is.empty(d2)){return(numeric(length(d1)))}
-  if(!is.empty(holidays)){holidays = try(as.Date(holidays), silent = T) %>% verify('Date', err_msg = "Could not convert argument 'holidays' to date", err_src = 'gener::diffDate')}
+  if(!is.empty(holidays)){holidays = try(as.Date(holidays), silent = T) %>% verify('Date', err_msg = "Could not convert argument 'holidays' to date", err_src = 'rutils::diffDate')}
   
   w1 = which(d1 %>% is.holiday)
   while(length(w1) > 0){
@@ -2150,7 +2150,7 @@ diffDate <- function(d1, d2, holidays = c()) {
 # Gives difference between two given times excluding weekends and list of given holidays
 #' @export
 diffTime = function(t1, t2, units = 'hours', holidays = c()){
-  units %>% verify('character', domain = c('hours', 'mins', 'secs', 'days'), default = 'hours', varname = 'units', err_src = 'gener::diffTime')
+  units %>% verify('character', domain = c('hours', 'mins', 'secs', 'days'), default = 'hours', varname = 'units', err_src = 'rutils::diffTime')
   unitsPerDay = c(hours = 24, mins = 24*60, secs = 24*3600, days = 1)
   
   t1 %<>% as.time(target_class = 'POSIXct') %>% setTZ('GMT')
@@ -2166,12 +2166,12 @@ diffTime = function(t1, t2, units = 'hours', holidays = c()){
 #' @export
 addDate <- function(ds, nd, holidays = c()) {
   mm = max(length(ds), length(nd))
-  d1 = try(as.Date(ds), silent = T) %>% verify('Date', err_msg = "Could not convert argument 'ds' to date", err_src = 'gener::addDate') %>% vect.extend(mm)
-  nd = try(as.integer(nd), silent = T) %>% verify('integer', err_msg = "Could not convert argument 'nd' to integer", err_src = 'gener::addDate') %>% vect.extend(mm) %>% na2zero
+  d1 = try(as.Date(ds), silent = T) %>% verify('Date', err_msg = "Could not convert argument 'ds' to date", err_src = 'rutils::addDate') %>% vect.extend(mm)
+  nd = try(as.integer(nd), silent = T) %>% verify('integer', err_msg = "Could not convert argument 'nd' to integer", err_src = 'rutils::addDate') %>% vect.extend(mm) %>% na2zero
   
   
   if(is.empty(d1) | is.empty(nd)){return(d1)}
-  if(!is.empty(holidays)){holidays = try(as.Date(holidays), silent = T) %>% verify('Date', err_msg = "Could not convert argument 'holidays' to date", err_src = 'gener::addDate')}
+  if(!is.empty(holidays)){holidays = try(as.Date(holidays), silent = T) %>% verify('Date', err_msg = "Could not convert argument 'holidays' to date", err_src = 'rutils::addDate')}
   
   out = d1 + 2*nd - diffDate(d1 + nd, d1, holidays = holidays)
   
@@ -2184,10 +2184,10 @@ addDate <- function(ds, nd, holidays = c()) {
 
 #' @export
 addTime <- function(ts, nt, units = 'hours', holidays = c()){
-  units %>% verify('character', domain = c('hours', 'mins', 'secs', 'days'), default = 'hours', varname = 'units', err_src = 'gener::diffTime')
+  units %>% verify('character', domain = c('hours', 'mins', 'secs', 'days'), default = 'hours', varname = 'units', err_src = 'rutils::diffTime')
   mm = max(length(ts), length(nt))
-  ts = try(as.time(ts), silent = T) %>% verify('POSIXct', err_msg = "Could not convert argument 'ts' to time", err_src = 'gener::addTime') %>% vect.extend(mm)
-  nt = try(as.numeric(nt), silent = T) %>% verify('numeric', err_msg = "Could not convert argument 'nt' to numeric", err_src = 'gener::addTime') %>% vect.extend(mm) %>% na2zero
+  ts = try(as.time(ts), silent = T) %>% verify('POSIXct', err_msg = "Could not convert argument 'ts' to time", err_src = 'rutils::addTime') %>% vect.extend(mm)
+  nt = try(as.numeric(nt), silent = T) %>% verify('numeric', err_msg = "Could not convert argument 'nt' to numeric", err_src = 'rutils::addTime') %>% vect.extend(mm) %>% na2zero
   
   if(is.empty(ts) | is.empty(nt)){return(ts)}
   
