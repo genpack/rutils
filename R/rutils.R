@@ -4,8 +4,8 @@
 # Author:       Nicolas Berta 
 # Email :       nicolas.berta@gmail.com
 # Start Date:   21 October 2013
-# Last change:  05 August 2019
-# Version:      3.0.9
+# Last change:  13 October 2020
+# Version:      3.1.1
 
 # Version   Date               Action
 # -----------------------------------
@@ -122,6 +122,8 @@
 # 3.0.0     26 June 2019       io.r changes to version 2.0.0 
 # 3.0.1     17 July 2019       io.r changes to version 2.0.1 
 # 3.0.9     05 August 2019     Functions pdf(), cdf(), cdf.inv() and gen.random() plus 4 type conversion functions added.
+# 3.1.0     10 October 2020    io.R transferred to rbig package
+# 3.1.1     13 October 2020    Functions add_month() and add_year() exported.
 
 
 # --------------------------------------------
@@ -2068,6 +2070,18 @@ setTZ = function(time, tz){
 }
 
 
+#' Adds a certain number of months to the given date in %y-%m-%d format. 
+#' 
+#' @param monthstr (charachter): Given date %y-%m-%d format as character
+#' @param num (numeric or integer): Number of months to be added to the given date. It can be a negative number.
+#' @return (character): Refers to the first day of the date with added months
+#' @examples
+#' add_month('2012-06-01', 3)
+#' [1] "2012-09-01"
+#' add_month('2010-03-12', -6)
+#' [1] "2009-09-01"
+#'
+#' @export
 add_month = function(monthstr, num = 1){
   mn = monthstr %>% substr(6,7) %>% as.integer
   mn = mn + num
@@ -2078,6 +2092,7 @@ add_month = function(monthstr, num = 1){
   paste(yr, mn %>% stringr::str_pad(2, pad = "0"), '01', sep = '-')
 } 
 
+#' @export
 add_year = function(monthstr, num = 1){
   paste(monthstr %>% substr(1,4) %>% as.integer %>% {. + num}, 
         monthstr %>% substr(6,7), '01', sep = '-')
@@ -2101,6 +2116,7 @@ col2Hex = function(color){
 }
 
 
+#' @export
 is.holiday = function(d, holidays = c()){
   return((format(d, "%u") %in% c("6", "7")) | (d %in% holidays))
 }
@@ -2459,13 +2475,13 @@ column_classes = function(df){
 }  
   
   
-aggr = function(x, id.cols, measure.cols, aggregator = 'mean') {
+dplyr.aggregate = function(x, id.cols, measure.cols, aggregator = 'mean') {
   args_1 = id.cols %>% paste(collapse = ',')
   args_2 = "%s = %s(%s, na.rm = T)" %>% sprintf(measure.cols, aggregator, measure.cols) %>% paste(collapse = ',')
   parse(text = "dplyr::summarise(dplyr::group_by(x, %s) , %s)" %>% sprintf(args_1, args_2)) %>% eval
 } 
 
-# Returns th most frequent item (best to be used for nominals)
+# Returns the most frequent item (best to be used for nominals)
 #' Returns the most frequent element of given vector \code{v}
 #' @param v Vector
 #' @param na.rm Logical Should missing values be removed?
