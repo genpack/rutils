@@ -130,8 +130,7 @@
 
 #' @import magrittr
 #' @include linalg.R
-#' @include io.R
-#' @include nibetree.R
+#' @include tree.R
 #' @include clust.R
 
 #' @export

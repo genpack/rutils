@@ -13,7 +13,7 @@ License: MIT
 LazyData: TRUE
 Collate: 
     'clust.R'
-    'tree.R'
     'linalg.R'
+    'tree.R'
     'rutils.R'
 RoxygenNote: 6.1.1
