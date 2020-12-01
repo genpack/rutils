@@ -123,7 +123,8 @@
 # 3.0.1     17 July 2019       io.r changes to version 2.0.1 
 # 3.0.9     05 August 2019     Functions pdf(), cdf(), cdf.inv() and gen.random() plus 4 type conversion functions added.
 # 3.1.0     10 October 2020    io.R transferred to rbig package
-# 3.1.1     13 October 2020    Functions add_month() and add_year() exported.
+# 3.1.2     13 October 2020    Functions add_month() and add_year() exported.
+# 3.1.3     01 December 2020   Function operate() added and exported.
 
 
 # --------------------------------------------
@@ -2493,3 +2494,11 @@ most_frequent <- function(v, na.rm = F) {
   uv[which.max(tabulate(match(v, uv)))]
 }
   
+
+#' @export
+operate = function(input, config){
+  list('input') %>% 
+    c(config %>% lapply(function(item) paste0(item$fun, '(', paste(item$arguments, collapse = ', '), ')'))) %>% 
+    unlist %>% paste(collapse = " %>% ") -> script
+  parse(text = script) %>% eval
+}
