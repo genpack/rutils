@@ -4,8 +4,8 @@
 # Author:       Nicolas Berta 
 # Email :       nicolas.berta@gmail.com
 # Start Date:   21 October 2013
-# Last change:  13 October 2020
-# Version:      3.1.1
+# Last change:  26 March 2021
+# Version:      3.1.7
 
 # Version   Date               Action
 # -----------------------------------
@@ -125,7 +125,10 @@
 # 3.1.0     10 October 2020    io.R transferred to rbig package
 # 3.1.2     13 October 2020    Functions add_month() and add_year() exported.
 # 3.1.3     01 December 2020   Function operate() added and exported.
-
+# 3.1.4     15 February 2021   Function operate() modified. Function argscr() added
+# 3.1.5     11 March 2021      Function column.cumulative.forward() exported
+# 3.1.6     24 March 2021      Function divisors() added and exported.
+# 3.1.7     26 March 2021      Function elbow modified: Argument max.num.clusters changed to num.clusters specifying a set of values for number of clusters to be tested
 
 # --------------------------------------------
 
@@ -1977,7 +1980,6 @@ trim = function(v, lb = 0, ub = Inf){
   v[(v >= lb) & (v <= ub)]
 }
 
-
 #' @export
 removeRownames = function(v){
   rownames(v) <- NULL
@@ -2071,9 +2073,9 @@ setTZ = function(time, tz){
 }
 
 
-#' Adds a certain number of months to the given date in %y-%m-%d format. 
+#' Adds a certain number of months to the given date in \code{%y-%m-%d} format. 
 #' 
-#' @param monthstr (charachter): Given date %y-%m-%d format as character
+#' @param monthstr (charachter): Given date \code{%y-%m-%d} format as character
 #' @param num (numeric or integer): Number of months to be added to the given date. It can be a negative number.
 #' @return (character): Refers to the first day of the date with added months
 #' @examples
@@ -2494,11 +2496,30 @@ most_frequent <- function(v, na.rm = F) {
   uv[which.max(tabulate(match(v, uv)))]
 }
   
+argscr = function(arg){
+  if (inherits(arg, 'list')){arg %<>% unlist}
+  nms = names(arg)
+  if (is.null(nms)){nms = rep("", length(arg))}
+  assert(length(nms) == length(arg), "Impossible")
+  act = rep(" = ", length(arg))
+  act[which(nms == "")] <- ""
+  paste0(nms, act, arg) %>% paste(collapse = ', ')
+}
 
 #' @export
 operate = function(input, config){
   list('input') %>% 
-    c(config %>% lapply(function(item) paste0(item$fun, '(', paste(item$arguments, collapse = ', '), ')'))) %>% 
+    c(config %>% lapply(function(item) paste0(item$fun, '(', argscr(item$arg), ')'))) %>% 
     unlist %>% paste(collapse = " %>% ") -> script
   parse(text = script) %>% eval
 }
+
+
+#' @export
+divisors <- function(x){
+  #  Vector of numberes to test against
+  y <- seq_len(x)
+  #  Modulo division. If remainder is 0 that number is a divisor of x so return it
+  y[ x%%y == 0 ]
+}
+

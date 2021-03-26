@@ -153,6 +153,7 @@ vect.cumulative.backward = function(v, index = sequence(length(v)) %>% rev){
 }
 
 
+#' @export
 column.cumulative.forward = function(tbl, col = 1, id_col = NULL, aggregator = cumsum){
   # if(is.null(id_col)){dup = tbl %>% nrow %>% sequence %>% setdiff(1)} else {dup = tbl %>% pull(id_col) %>% duplicated %>% which}
   for(j in col){
