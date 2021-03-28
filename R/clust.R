@@ -15,6 +15,7 @@
 #                                bnc: best number of clusters
 # 1.2.2     21 September 2016    Argument bnc_threshold added to functions bnc() and elbow()
 # 1.2.3     28 May 2019          function elbow() modified: for euclidean metric, max.num.cluster now can be equal to nrow(M)
+# 1.2.4     26 March 2021        function elbow() modified: Argument max.num.clusters changed to num.clusters specifying a set of values for number of clusters to be tested
 
 
 cluster.distances <- function(M, SK){
@@ -49,28 +50,39 @@ cluster.moments <- function(M, SK){
 #' Use this function to find the best number of clusters
 #'
 #' @param M A matrix containing vectors for clustering. Each row defines a vector.
-#' @param num.clusters set of values fro number of clusters to test
+#' @param max.num.clusters maximum number of clusters
 #' @param metric Either 'euclidean' or 'spherical' determining the metric used for clustering
 #' @param bnc_threshold Specifies the threshold for reduction ratio in within group sum of squares
 #' @param doPlot logical: Would you like to see the elbow plot to determine the number of clusters?
+#' @param num.clusters set of values for number of clusters to test. 
 #' @return list: containing three elements: wgss (Within group sum of squares), clst (list of clustering objects), bnc(best number of clusters)
 #' @examples
 #' a = elbow(iris[,1:4], num.clusters = c(2, 5, 10, 15, 20, 25), doPlot = T)
 #'
 #' a$wgss
-#' [1] 152.34795  49.86225  26.16505  24.91674  19.95137  12.14760
+#'       NC2       NC5      NC10      NC15      NC20      NC25 
+#' 152.34795  46.46117  29.90776  21.67031  17.78198  11.90241 
 #' (Your values may be different!)
 #' 
 #' a$clst[[a$bnc]]$cluster %>% table
-#' 1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 
-#' 5  6  3 12  4  5  4 10  4  9  7  5 10  8  7  5  6 10  6  1  3  5  4  4  7
+#' 1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 
+#' 15 10  7 13  8  8  1 10  4  6  3  5  8  9  5  5  5 14 10  4 
 #' (Your values may be different!)
 #' @export
-elbow <- function(M, num.clusters = 2:min(nrow(M), 25), metric = "euclidean", bnc_threshold = 0.2, doPlot = T) {
+elbow <- function(M, max.num.clusters = 25, metric = "euclidean", doPlot = T, num.clusters = NULL, bnc_method = "jump_threshold", ...) {
   if(!inherits(M, 'matrix')){M %<>% as.matrix}
   nr = nrow(M)
   assert(nr > 2, "Number of rows must be greater than 1", err_src = 'elbow')
+  
+  max.num.clusters = verify(max.num.clusters, domain= c(2, NA), default = nrow(M) - 1)
+  
+  if(is.null(num.clusters)){
+    num.clusters = sequence(max.num.clusters) %-% 1
+  }
+  
   num.clusters = num.clusters[num.clusters < nr]
+  if(!is.null(max.num.clusters)){num.clusters = num.clusters[num.clusters <= max.num.clusters]}
+  
   assert(!(1 %in% num.clusters), 'Number of clusters must be greater than 1', err_src = 'elbow')
   
   wgss = c()
@@ -84,31 +96,46 @@ elbow <- function(M, num.clusters = 2:min(nrow(M), 25), metric = "euclidean", bn
       wgss = c(wgss, K$tot.withinss)
       clst %<>% list.add(K)
     }
+    names(wgss) <- paste0('NC', num.clusters)
+    names(clst) <- paste0('NC', num.clusters)
+    
     if(doPlot){plot(num.clusters, wgss, type="b")}
-    return(list(wgss = wgss, clst = clst, bnc = wgss %>% bnc(bnc_threshold = bnc_threshold)))
+    out = list(wgss = wgss, clst = clst)
+    return(list(wgss = wgss, clst = clst, bnc = wgss %>% best_num_clusters(method = bnc_method, ...)))
   }
   else if (metric == "spherical"){
     library("skmeans")
-    for (nc in num.clusters) {
+    for (nc in num.clusters){
       SK    = skmeans(M, nc)
       tot.withinss = sum(cluster.moments(M, SK))
       wgss = c(wgss, tot.withinss)
       clst %<>% list.add(K)
     }
+    names(wgss) <- paste0('NC', num.clusters)
+    names(clst) <- paste0('NC', num.clusters)
+    
     if(doPlot){plot(num.clusters, wgss, type="b")}
-    return(list(wgss = wgss, clst = clst, bnc = wgss %>% bnc(bnc_threshold = bnc_threshold)))
+    return(list(wgss = wgss, clst = clst, bnc = wgss %>% best_num_clusters(method = bnc_method, ...)))
   }
 }
 
-bnc <- function(wss, bnc_threshold = 0.2){
-  N   = length(wss)
-  names(wss) = N %>% sequence %>% as.character
-  w   =  which((wss[-N] - wss[-1])/wss[-N] < bnc_threshold)
-  while(!is.empty(w)){
-    wss = wss[- w - 1]
-    N   = length(wss)
-    w   =  which((wss[-N] - wss[-1])/wss[-N] < bnc_threshold)
-  }
+best_num_clusters <- function(wss, method =c("jump_threshold", "gain_and_cost") , jump_threshold = 0.2){
+  method = match.arg(method)
+  N = length(wss)
+  ncls = names(wss) %>% gsub(pattern = "NC", replacement = "") %>% as.numeric
+  if(is.empty(ncls)){ncls = len_seq(wss)}
   
-  return(names(wss)[N] %>% as.integer)
+  if(method == 'jump_threshold'){
+    w   =  which((wss[-N] - wss[-1])/wss[-N] < jump_threshold)
+    while(!is.empty(w)){
+      wss = wss[- w - 1]
+      N   = length(wss)
+      w   =  which((wss[-N] - wss[-1])/wss[-N] < jump_threshold)
+    }
+    return(ncls[N] %>% as.integer)
+  } else if (method == 'gain_and_cost'){
+    gain = c(0, wss) %>% vect.map %>% {1-.[-1]}
+    cost = c(0, ncls) %>% vect.map %>% {.[-1]}
+    return(ncls[order(gain/cost) %>% {.[length(.)]}])
+  }
 }
