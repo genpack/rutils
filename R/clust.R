@@ -119,7 +119,8 @@ elbow <- function(M, max.num.clusters = 25, metric = "euclidean", doPlot = T, nu
   }
 }
 
-best_num_clusters <- function(wss, method =c("jump_threshold", "gain_and_cost") , jump_threshold = 0.2){
+#' @export
+best_num_clusters <- function(wss, method =c("jump_threshold", "gain_and_cost", "min_slope", "best_break", "angle_threshold") , jump_threshold = 0.2, angle_threshold = 70){
   method = match.arg(method)
   N = length(wss)
   ncls = names(wss) %>% gsub(pattern = "NC", replacement = "") %>% as.numeric
@@ -137,5 +138,46 @@ best_num_clusters <- function(wss, method =c("jump_threshold", "gain_and_cost") 
     gain = c(0, wss) %>% vect.map %>% {1-.[-1]}
     cost = c(0, ncls) %>% vect.map %>% {.[-1]}
     return(ncls[order(gain/cost) %>% {.[length(.)]}])
+  } else if (method == 'min_slope'){
+    bncs = c()
+    for(i in sequence(N - 1)){
+      a = (wss - wss[i])/(ncls - ncls[i])
+      a = a[ - sequence(i)]
+      b = ncls[ - sequence(i)]
+      bncs = c(bncs, b[order(a) %>% first])
+    }
+    a = table(bncs)
+    b = names(a) %>% as.integer
+    return(b[which(a == max(a))] %>% max)
+  } else if(method == "best_break"){
+    ss = sequence(N-2) + 1
+    nn = sequence(N)
+    minr = Inf
+    for(i in ss){
+      for (j in nn[nn < i]){
+        v = (wss[j] - wss[i])/(ncls[i] - ncls[j])
+        if(v > 0){
+          for (k in nn[nn>i]){
+            u = (wss[i] - wss[k])/(ncls[k] - ncls[i])
+            if(u > 0){
+              r = u/v
+              if(r < minr){
+                minr = r
+                mini = i
+                minj = j
+                mink = k
+              }
+            }
+          }
+        }
+      }
+    }
+    return(ncls[mini])
+  } else if(method == 'angle_threshold'){
+    a = wss[-N] - wss[-1]
+    b = ncls[-1] - ncls[-N]
+    t = 180*atan(a/b)/pi
+    w = which((t > 0) & (t < angle_threshold))
+    return(best_num_clusters(wss, method = 'best_break'))
   }
 }

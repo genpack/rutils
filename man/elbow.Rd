@@ -4,19 +4,21 @@
 \alias{elbow}
 \title{Use this function to find the best number of clusters}
 \usage{
-elbow(M, num.clusters = 2:min(nrow(M), 25), metric = "euclidean",
-  bnc_threshold = 0.2, doPlot = T)
+elbow(M, max.num.clusters = 25, metric = "euclidean", doPlot = T,
+  num.clusters = NULL, bnc_method = "jump_threshold", ...)
 }
 \arguments{
 \item{M}{A matrix containing vectors for clustering. Each row defines a vector.}
 
-\item{num.clusters}{set of values fro number of clusters to test}
+\item{max.num.clusters}{maximum number of clusters}
 
 \item{metric}{Either 'euclidean' or 'spherical' determining the metric used for clustering}
 
-\item{bnc_threshold}{Specifies the threshold for reduction ratio in within group sum of squares}
-
 \item{doPlot}{logical: Would you like to see the elbow plot to determine the number of clusters?}
+
+\item{num.clusters}{set of values for number of clusters to test.}
+
+\item{bnc_threshold}{Specifies the threshold for reduction ratio in within group sum of squares}
 }
 \value{
 list: containing three elements: wgss (Within group sum of squares), clst (list of clustering objects), bnc(best number of clusters)
@@ -28,11 +30,12 @@ Use this function to find the best number of clusters
 a = elbow(iris[,1:4], num.clusters = c(2, 5, 10, 15, 20, 25), doPlot = T)
 
 a$wgss
-[1] 152.34795  49.86225  26.16505  24.91674  19.95137  12.14760
+      NC2       NC5      NC10      NC15      NC20      NC25 
+152.34795  46.46117  29.90776  21.67031  17.78198  11.90241 
 (Your values may be different!)
 
 a$clst[[a$bnc]]$cluster \%>\% table
-1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 
-5  6  3 12  4  5  4 10  4  9  7  5 10  8  7  5  6 10  6  1  3  5  4  4  7
+1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 
+15 10  7 13  8  8  1 10  4  6  3  5  8  9  5  5  5 14 10  4 
 (Your values may be different!)
 }

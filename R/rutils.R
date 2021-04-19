@@ -5,7 +5,7 @@
 # Email :       nicolas.berta@gmail.com
 # Start Date:   21 October 2013
 # Last change:  29 March 2021
-# Version:      3.1.8
+# Version:      3.1.9
 
 # Version   Date               Action
 # -----------------------------------
@@ -128,7 +128,7 @@
 # 3.1.4     15 February 2021   Function operate() modified. Function argscr() added
 # 3.1.5     11 March 2021      Function column.cumulative.forward() exported
 # 3.1.6     24 March 2021      Function divisors() added and exported.
-# 3.1.8     29 March 2021      Function elbow modified: Argument max.num.clusters changed to num.clusters specifying a set of values for number of clusters to be tested
+# 3.1.9     29 March 2021      Function elbow modified: Argument max.num.clusters changed to num.clusters specifying a set of values for number of clusters to be tested
 
 # --------------------------------------------
 

@@ -1,7 +1,7 @@
 Package: rutils
 Type: Package
 Title: A library of useful general functions in R
-Version: 3.1.8
+Version: 3.1.9
 Date: 29 March 2021
 Author: Nicolas Berta
 Maintainer: Nicolas Berta <nicolas.berta@gmail.com>
