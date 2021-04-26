@@ -4,8 +4,8 @@
 # Author:       Nicolas Berta 
 # Email :       nicolas.berta@gmail.com
 # Start Date:   21 October 2013
-# Last change:  29 March 2021
-# Version:      3.1.9
+# Last change:  26 April 2021
+# Version:      3.2.0
 
 # Version   Date               Action
 # -----------------------------------
@@ -129,6 +129,7 @@
 # 3.1.5     11 March 2021      Function column.cumulative.forward() exported
 # 3.1.6     24 March 2021      Function divisors() added and exported.
 # 3.1.9     29 March 2021      Function elbow modified: Argument max.num.clusters changed to num.clusters specifying a set of values for number of clusters to be tested
+# 3.2.0     26 April 2021      clust.R moved to rutils. No longer in this package.
 
 # --------------------------------------------
 
@@ -137,7 +138,6 @@
 #' @import magrittr
 #' @include linalg.R
 #' @include tree.R
-#' @include clust.R
 
 #' @export
 support = function(...){
