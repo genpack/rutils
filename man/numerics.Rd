@@ -2,7 +2,7 @@
 % Please edit documentation in R/rutils.R
 \name{numerics}
 \alias{numerics}
-\title{Returns numeric column labels of a data frame}
+\title{Get numeric column names of a data frame}
 \usage{
 numerics(df)
 }

@@ -4,9 +4,11 @@
 \alias{assert}
 \title{Terminates the execution with an error message if the given conditional statement is \code{FALSE}}
 \usage{
-assert(flag, err_msg = "Assertion Error !",
-  err_src = paste(deparse(sys.calls()[[max(sys.nframe() - 1, 1)]]),
-  collapse = ""))
+assert(
+  flag,
+  err_msg = "Assertion Error !",
+  err_src = paste(deparse(sys.calls()[[max(sys.nframe() - 1, 1)]]), collapse = "")
+)
 }
 \arguments{
 \item{flag}{A boolean: Condition to be checked}

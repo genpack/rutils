@@ -1,10 +1,10 @@
 Package: rutils
 Type: Package
 Title: A library of useful general functions in R
-Version: 3.2.0
-Date: 26 April 2021
-Author: Nicolas Berta
-Maintainer: Nicolas Berta <nicolas.berta@gmail.com>
+Version: 3.2.5
+Date: 16 June 2022
+Author: Nima Ramezani
+Maintainer: Nima Ramezani <nima.ramezani@gmail.com>
 Description: This package provides a useful general library of functions in R. 
   There are various functions for working with numerics, characters, vectors,
   matrices and data.frames plus many functions for conversion, error handling and
@@ -15,4 +15,4 @@ Collate:
     'linalg.R'
     'tree.R'
     'rutils.R'
-RoxygenNote: 6.1.1
+RoxygenNote: 7.2.0

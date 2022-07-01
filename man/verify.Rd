@@ -4,14 +4,25 @@
 \alias{verify}
 \title{Verifies that a given isvariable is valid.}
 \usage{
-verify(var, allowed = NULL, domain = NULL, lengths = NULL,
-  dims = NULL, null_allowed = T, names_domain = NULL,
-  rownames_domain = NULL, names_include = NULL,
-  names_identical = NULL, rownames_include = NULL,
-  rownames_identical = NULL, fix = F,
-  err_src = paste(deparse(sys.calls()[[max(sys.nframe() - 1, 1)]]),
-  collapse = ""), err_msg = "Error in Operation!", default = NULL,
-  varname = deparse(substitute(var)))
+verify(
+  var,
+  allowed = NULL,
+  domain = NULL,
+  lengths = NULL,
+  dims = NULL,
+  null_allowed = T,
+  names_domain = NULL,
+  rownames_domain = NULL,
+  names_include = NULL,
+  names_identical = NULL,
+  rownames_include = NULL,
+  rownames_identical = NULL,
+  fix = F,
+  err_src = paste(deparse(sys.calls()[[max(sys.nframe() - 1, 1)]]), collapse = ""),
+  err_msg = "Error in Operation!",
+  default = NULL,
+  varname = deparse(substitute(var))
+)
 }
 \arguments{
 \item{var}{Any variable}

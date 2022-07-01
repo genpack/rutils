@@ -6,15 +6,12 @@
 \usage{
 nominals(df)
 }
+\arguments{
+\item{df}{data.frame: The table for which nominal columns are required}
+}
 \value{
 vector of characters containing nominal column labels of the given table
 }
 \description{
 Returns nominal(categorical) column labels of a data frame
 }
-\section{Fields}{
-
-\describe{
-\item{\code{df}}{data.frame: The table for which nominal columns are required}
-}}
-

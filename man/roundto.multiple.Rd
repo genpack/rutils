@@ -7,11 +7,11 @@
 roundto.multiple(x, N, adjust = "closest")
 }
 \arguments{
-\item{x}{A numeric or integer}
+\item{x}{numeric or integer}
 
-\item{N}{A numeric or integer}
+\item{N}{numeric or integer}
 
-\item{adjust}{A character string:
+\item{adjust}{character:
 'closest': Returns the closest multiple of \code{N} \cr
 'top'   ': Returns the closest multiple of \code{N} that is greater than \code{x} \cr
 'bottom' : Returns the closest multiple of \code{N} that is smaller than \code{x} \cr}

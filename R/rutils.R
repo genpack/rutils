@@ -4,8 +4,8 @@
 # Author:       Nicolas Berta 
 # Email :       nicolas.berta@gmail.com
 # Start Date:   21 October 2013
-# Last change:  26 April 2021
-# Version:      3.2.0
+# Last change:  16 June 2022
+# Version:      3.2.5
 
 # Version   Date               Action
 # -----------------------------------
@@ -130,9 +130,31 @@
 # 3.1.6     24 March 2021      Function divisors() added and exported.
 # 3.1.9     29 March 2021      Function elbow modified: Argument max.num.clusters changed to num.clusters specifying a set of values for number of clusters to be tested
 # 3.2.0     26 April 2021      clust.R moved to rutils. No longer in this package.
-
+# 3.2.1     05 May 2021        Function setup_multicore() added.
+# 3.2.2     02 Jul 2021        Function list.edit() modified.
+# 3.2.3     05 April 2022      Function get.random.cond() renamed to get.random.highpass().
+# 3.2.4     14 June 2022       Function expmean() added.
+# 3.2.5     16 June 2022       Function list.replace() added.
 # --------------------------------------------
 
+
+
+## Name space standard for my all R code written and developed by Nima Ramezani:
+# - Class name: TimeSeries, TransitionSystem, OptimalTaskAllocator, ...
+# - Argument name: words are seperated by _
+# - Aunction/Method names: seperated by "_" or "."
+#   dot is used mainly in hierarchical structures like:
+#     plot.status.bar, plot.trace.sunburst, get.metric.volume, get.metric.e2e_time
+#   underline is to separate words like
+#     get.best_model
+# - Global Variables: all capital, separated by "." or "_". Similarly, dot is for hierarchical structures:
+#   examples:
+#     VALID.COLORS
+#     VALID.CLASSES.TIME
+#     VALID.CLASSES.NUMERIC   
+# - Internal Variables:
+#   Example: 
+#   bestNumebr, toBeDeleted, casesToRemove, ...
 
 
 #' @import magrittr
@@ -234,9 +256,9 @@ is.empty = function(x){
 
 #' Rounds \code{x} to the nearest multiple of \code{N}
 #'
-#' @param x A numeric or integer
-#' @param N A numeric or integer
-#' @param adjust A character string:
+#' @param x numeric or integer
+#' @param N numeric or integer
+#' @param adjust character:
 #' 'closest': Returns the closest multiple of \code{N} \cr
 #' 'top'   ': Returns the closest multiple of \code{N} that is greater than \code{x} \cr
 #' 'bottom' : Returns the closest multiple of \code{N} that is smaller than \code{x} \cr
@@ -1543,7 +1565,8 @@ prettyDate = function(x){
   paste(weekdays(x), as.POSIXlt(x)$mday, months(x), as.numeric(format(x,'%Y')))
 }
 
-#' Returns numeric column labels of a data frame
+#' @title Get numeric column names of a data frame
+#' @description Returns numeric column labels of a data frame
 #' @field df data.frame: The table for which numeric columns are required
 #' @return vector of characters containing numeric column labels of the given table
 #' @export
@@ -1558,7 +1581,7 @@ numerics = function(df){
 }
 
 #' Returns nominal(categorical) column labels of a data frame
-#' @field df data.frame: The table for which nominal columns are required
+#' @param df data.frame: The table for which nominal columns are required
 #' @return vector of characters containing nominal column labels of the given table
 #' @export
 nominals = function(df){
@@ -1842,9 +1865,31 @@ list.clean = function(L){
 }
 
 #' @export
-list.edit = function(l = NULL, ...){
-  if(is.empty(l)){l = list()}
-  return(l %<==>% list(...))
+list.edit = function(lst, edits, inject = F){
+  if(is.empty(lst)){lst = list()}
+  nms = names(edits)
+  if(is.empty(nms)){
+    for(i in sequence(length(edits))){
+      if(inherits(edits[[i]], 'list') & (length(lst) >= i)){
+        lst[[i]] %<>% list.edit(edits[[i]])
+      } else {
+        lst[[i]] <- edits[[i]]
+      }
+    }
+  } else {
+    for(itm in nms){
+      if(inherits(edits[[itm]], 'list')){
+        lst[[itm]] %<>% list.edit(edits[[itm]])
+      } else {
+        if(inject){
+          lst[[itm]] <- c(lst[[itm]], edits[[itm]])
+        } else {
+          lst[[itm]] <- edits[[itm]]
+        }
+      }
+    }
+  }
+  return(lst)
 }
 
 #' @export
@@ -2073,32 +2118,45 @@ setTZ = function(time, tz){
 }
 
 
-#' Adds a certain number of months to the given date in \code{%y-%m-%d} format. 
+#' @description Adds a certain number of months to the given character date in \code{%Y-%m-%d} format.
 #' 
-#' @param monthstr (charachter): Given date \code{%y-%m-%d} format as character
-#' @param num (numeric or integer): Number of months to be added to the given date. It can be a negative number.
-#' @return (character): Refers to the first day of the date with added months
+#' @title Add or subtract months to a given date character
+#' @param input_date (character): Given date \code{%Y-%m-%d} format as character
+#' @param num_months (numeric or integer): Number of months to be added to the given date. It can be a negative number.
+#' @return (character): date pointing to the input date with added months
 #' @examples
 #' add_month('2012-06-01', 3)
 #' [1] "2012-09-01"
 #' add_month('2010-03-12', -6)
-#' [1] "2009-09-01"
-#'
+#' [1] "2009-09-12"
 #' @export
-add_month = function(monthstr, num = 1){
-  mn = monthstr %>% substr(6,7) %>% as.integer
-  mn = mn + num
-  yr = monthstr %>% substr(1,4) %>% as.integer
+add_month = function(input_date, num_months = 1){
+  dy = input_date %>% substr(9,10)
+  mn = input_date %>% substr(6,7) %>% as.integer
+  yr = input_date %>% substr(1,4) %>% as.integer
+  mn = mn + num_months
   while(mn > 12){mn = mn - 12; yr = yr + 1}
   while(mn < 1 ){mn = mn + 12; yr = yr - 1}
   
-  paste(yr, mn %>% stringr::str_pad(2, pad = "0"), '01', sep = '-')
+  paste(yr, mn %>% stringr::str_pad(2, pad = "0"), dy, sep = '-')
 } 
 
+#' @description Adds a certain number of years to the given character date in \code{%Y-%m-%d} format.
+#' 
+#' @title Add or subtract years to a given date character.
+#' @param input_date (charahter): Given date \code{%Y-%m-%d} format as character
+#' @param num_years (numeric or integer): Number of years to be added to the given date. It can be a negative number.
+#' @return (character): date pointing to the same day and month of the input date with years added
+#' @examples
+#' add_year('2012-06-11', 3)
+#' [1] "2015-06-11"
+#' add_month('2010-03-12', -6)
+#' [1] "2004-03-12"
+#'
 #' @export
-add_year = function(monthstr, num = 1){
-  paste(monthstr %>% substr(1,4) %>% as.integer %>% {. + num}, 
-        monthstr %>% substr(6,7), '01', sep = '-')
+add_year = function(input_date, num_years = 1){
+  paste(input_date %>% substr(1,4) %>% as.integer %>% {. + num_years}, 
+        input_date %>% substr(6,7), input_date %>% substr(9,10), sep = '-')
 }
 
 
@@ -2389,6 +2447,26 @@ gen.random = function(family, ...){
   parse(text = paste0('r', family, '(...)')) %>% eval
 }
 
+# Generates random values with given distribution subject to being greater than x0
+# If you want to generate N random values with a distribution specified by cdf F(x) given that x > x0,
+# F.inv(a*u + 1 - a)
+# where a = 1 - F(x0) and u is random values with uniform distribution
+#' @export
+gen.random.highpass = function(N = 1, x0 = -Inf, family = 'normal', ...){
+  family = family %>% tolower %>% match.arg(family)
+  a   = 1 - cdf(x0, family = family, ...)
+  u   = runif(N)
+  v   = a*u + 1 - a
+  # Values exactly equal to 1 lead to Inf in the inverse cumulative density function, so subtract an infinitesinal value
+  v[v == 1.0] = 1.0 - .Machine$double.eps
+  out = cdf.inv(v, family = family, ...) %>% na2zero
+  # In rare cases due to machine precision error , values lower than x0 might be generated.
+  # In this case we will trim them to x0.
+  out[out < x0] <- x0[out < x0]
+  return(out)
+}
+
+
 #' @export  
 string2factor = function(df){
   cls = colnames(df) %>% sapply(function(i) class(df[,i])[1])
@@ -2523,3 +2601,57 @@ divisors <- function(x){
   y[ x%%y == 0 ]
 }
 
+#' @export
+setup_multicore = function(n_jobs = 4){
+  library(doParallel)
+  cl = makeCluster(n_jobs)
+  registerDoParallel(cl)
+  actual_njobs = getDoParWorkers()
+  warnif(actual_njobs < n_jobs, 
+         sprintf('Parallel run is working with %s cores rather than %s. It may take longer than expected!', actual_njobs, n_jobs))
+  return(cl)
+}
+
+
+# Converts a data.frame to the block of text for RMarkdown
+# left alignment is always used. If you need it differently, 
+# you should modify manually later in the text.
+table2text = function(df){
+  names(df) %>% sapply(function(u) df[,u] %>% as.character %>% nchar %>% max) %>% 
+    sapply(rep, x = "-") %>% sapply(paste, collapse = "") -> alignment
+
+  alignment = paste0("|:", alignment) %>% paste(collapse = "") %>% paste0("|")
+  
+  df %>% names %>% paste(collapse = ' | ') -> header
+  header = paste("|", header, "|")
+  
+  contents = df %>% as.matrix %>% apply(1, paste, collapse = ' | ')
+  contents = paste("|", contents, "|")
+  
+  
+  return(paste(header, alignment, contents %>% paste(collapse = " \n"), sep = " \n"))
+}
+
+
+#' @export
+expmean = function(x){
+  y  = x
+  nx = length(x)
+  if(nx > 1){
+    a  = 2/nx
+    for (k in 2:nx) y[k] <- a * x[k] + (1 - a) * y[k - 1]
+  }
+  return(y)
+}
+
+#' @export
+list.replace = function(input, pattern, replacement){
+  if(inherits(input, 'character')){
+    return(input %>% stringr::str_replace(pattern = pattern, replacement = replacement))
+  } else if (inherits(input, 'list')){
+    for(i in sequence(length(input))){
+      input[[i]] = list.replace(input[[i]], pattern = pattern, replacement = replacement)
+    }
+  }
+  return(input)
+}
