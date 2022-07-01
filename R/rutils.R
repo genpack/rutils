@@ -1016,12 +1016,12 @@ zeros <- function (m,n){
 }
 
 #' @export
-mod = function(m, d){
+div_mod = function(m, d){
   return(m - (m %/% d)*d)
 }
 
 #' @export
-mod.seq = function(start, end, num){
+div_mod.seq = function(start, end, num){
   s = start
   v = c()
   for (i in 1:num){
@@ -1248,7 +1248,7 @@ distribute.seasonality = function(time, season.values, seasonality = 'dow'){
 }
 
 #' @export
-add = function(x,y){
+add_narm = function(x,y){
   if (is.na(x)){x = 0}
   if (is.na(y)){y = 0}
   return(x+y)
