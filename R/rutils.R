@@ -1,11 +1,11 @@
 # Header
 # Filename:     rutils.R
 # Description:  Contains some general functions useful for R programming
-# Author:       Nicolas Berta 
-# Email :       nicolas.berta@gmail.com
+# Author:       Nima Ramezani
+# Email :       nima.ramezani@gmail.com
 # Start Date:   21 October 2013
-# Last change:  16 June 2022
-# Version:      3.2.5
+# Last change:  07 March 2023
+# Version:      3.2.6
 
 # Version   Date               Action
 # -----------------------------------
@@ -135,6 +135,7 @@
 # 3.2.3     05 April 2022      Function get.random.cond() renamed to get.random.highpass().
 # 3.2.4     14 June 2022       Function expmean() added.
 # 3.2.5     16 June 2022       Function list.replace() added.
+# 3.2.6     07 March 2023      Function backsum_p2() added.
 # --------------------------------------------
 
 
@@ -2041,6 +2042,22 @@ factor2Character = function(df){
 
 offset2GMT = function(tt){
   tt %>% as.character %>% strptime(format = '%Y-%m-%d %H:%M:%S', tz = 'GMT') %>% as.POSIXct
+}
+
+
+## converts given integer number to sum of powers of 2
+# for example: 7 = 1 + 2 + 4
+#' @export
+breaksum_p2 = function(x){
+  b = 1
+  set = c()
+  for (i in as.integer(intToBits(x))){
+    if(i > 0){
+      set = c(set, b)
+    }
+    b = b*2
+  }
+  return(set)
 }
 
 

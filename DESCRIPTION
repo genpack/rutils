@@ -1,8 +1,8 @@
 Package: rutils
 Type: Package
 Title: A library of useful general functions in R
-Version: 3.2.5
-Date: 16 June 2022
+Version: 3.2.6
+Date: 07 March 2023
 Author: Nima Ramezani
 Maintainer: Nima Ramezani <nima.ramezani@gmail.com>
 Description: This package provides a useful general library of functions in R. 
@@ -15,4 +15,4 @@ Collate:
     'linalg.R'
     'tree.R'
     'rutils.R'
-RoxygenNote: 7.2.0
+RoxygenNote: 7.2.1
