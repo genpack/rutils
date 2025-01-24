@@ -162,23 +162,51 @@
 #' @include linalg.R
 #' @include tree.R
 
+#' Install and Load Packages
+#'
+#' This function installs and loads R packages. If the specified packages are not
+#' already installed, it attempts to install them from CRAN.
+#'
+#' @param ... Character vector of package names to be installed and loaded.
+#'
+#' @return NULL. The function is mainly used for its side effects of installing
+#' and loading packages.
+#'
 #' @export
-support = function(...){
+#'
+#' @examples
+#' \dontrun{
+#' # Install and load the "dplyr" and "ggplot2" packages
+#' support("dplyr", "ggplot2")
+#' }
+#'
+#' @seealso \code{\link{require}}, \code{\link{install.packages}}, \code{\link{library}}
+#'
+#' @importFrom assertthat assert
+#' @importFrom methods setOldClass
+#'
+#' @rdname support
+support = function(...) {
   packages = as.character(c(...))
+  
   # verify(assert, 'character')
-  if (length(packages) < 1){return(NULL)}
-  if (length(packages) > 1){lapply(packages, support)}
-  else {
-    if (!require(packages, character.only = T)){
+  
+  if (length(packages) < 1) {
+    return(NULL)
+  }
+  
+  if (length(packages) > 1) {
+    lapply(packages, support)
+  } else {
+    if (!require(packages, character.only = TRUE)) {
       res = try(install.packages(packages))
-      if(inherits(res, 'try-error')){
-        stop(paste("\n","\n", "Package", packages , "is not available and cannot be installed from cran! Please install it manually!", "\n", "\n"))
+      if (inherits(res, 'try-error')) {
+        stop(paste("\n", "\n", "Package", packages, "is not available and cannot be installed from CRAN! Please install it manually!", "\n", "\n"))
       }
-      library(packages, character.only = T)
+      library(packages, character.only = TRUE)
     }
   }
 }
-
 support('magrittr')
 
 #' @export
@@ -315,9 +343,31 @@ assert <- function(flag, err_msg = 'Assertion Error !', err_src = paste(deparse(
     stop(err_msg, call. = F)}
 }
 
+#' Display Warning Message Conditionally
+#'
+#' This function displays a warning message if a specified condition is true.
+#'
+#' @param flag Logical. The condition that triggers the warning message.
+#' @param wrn_msg Character. The warning message to be displayed.
+#' @param wrn_src Character. Optional. Source information or context for the warning.
+#'
+#' @return NULL. The function is used for its side effect of displaying a warning message.
+#'
 #' @export
-warnif <- function(flag, wrn_msg, wrn_src = NULL){
-  if (flag){cat(paste('Warning:', wrn_src, '\n \n', wrn_msg, '\n \n'))}
+#'
+#' @examples
+#' \dontrun{
+#' # Display a warning message if the condition is TRUE
+#' warnif(TRUE, "This is a warning!")
+#' }
+#'
+#' @seealso \code{\link{cat}}
+#'
+#' @rdname warnif
+warnif <- function(flag, wrn_msg, wrn_src = NULL) {
+  if (flag) {
+    cat(paste('Warning:', wrn_src, '\n \n', wrn_msg, '\n \n'))
+  }
 }
 
 #' Makes a pretty error message to be displayed on the console
@@ -343,8 +393,9 @@ make.err.msg <- function(err_msg = '', err_src = 'rutils::make.err.msg'){
          err_msg, '\n', '\n')
 }
 
-# Returns the name of the calling function. Useful when you want to know which function has called the function you are in
+#' Returns the name of the calling function. Useful when you want to know which function has called the function you are in
 #' @export
+#' @return A character string containing the name of the calling function name
 getCallingFunctionName <- function(){
   calling_fcn <- deparse(sys.call(-1))
   stringr::str_replace_all(calling_fcn, pattern = "([a-z0-9_]*)(.*)",
@@ -1156,13 +1207,54 @@ feasible = function(v, range = NULL, excludes = NULL){
   return(index)
 }
 
+#' Find Index of First Feasible Element
+#'
+#' This function finds the index of the first feasible element in a vector.
+#'
+#' @param ... Arguments passed to the \code{\link{feasible}} function.
+#' @return The index of the first feasible element. If no feasible element is found, \code{NA} is returned.
+#'
 #' @export
-first.feasible <- function(...){
+#'
+#' @examples
+#' \dontrun{
+#' # Find the index of the first feasible element in a vector
+#' vec <- c(1, 2, 0, 4, 5)
+#' first.feasible(vec, range = c(2,5), excludes = 2)
+#' [1] 4
+#'
+#' @seealso \code{\link{feasible}}
+#'
+#' @importFrom base which
+first.feasible <- function(...) {
   w = which(feasible(...))
-  if (length(w) == 0){return(NA)} else {return(w[1])}
+  if (length(w) == 0) {
+    return(NA)
+  } else {
+    return(w[1])
+  }
 }
 
+
+#' Find Index of Last Feasible Element
+#'
+#' This function finds the index of the last feasible element in a vector.
+#'
+#' @param ... Arguments passed to the \code{\link{feasible}} function.
+#' @return The index of the last feasible element. If no feasible element is found, \code{NA} is returned.
+#'
 #' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Find the index of the last feasible element in a vector
+#' vec <- c(1, 2, 0, 4, 5)
+#' last.feasible(vec, range = c(2,5), excludes = 2)
+#' [1] 5
+#'
+#' @seealso \code{\link{feasible}}
+#'
+#' @importFrom base which
 last.feasible <- function(...){
   w = which(feasible(...))
   if (length(w) == 0){return(NA)} else {return(w[length(w)])}
@@ -1694,11 +1786,32 @@ vec2Col = function(v, base = c(red = 1, green = 1, blue = 1)){
   return(res)
 }
 
+#' Calculate Mean Color
+#'
+#' This function calculates the mean color from a vector of colors.
+#'
+#' @param ... Colors to calculate the mean from. The colors can be provided in various formats, such as character color names, hexadecimal color codes, or RGB values.
+#' @return The mean color as an RGB color object.
+#'
 #' @export
-color.mean = function(...){
-  mn = (try(c(...) %>% col2rgb, silent = T) %>%
+#'
+#' @examples
+#' \dontrun{
+#' # Calculate the mean color from a vector of colors
+#' colors <- c("red", "blue", "#00FF00")
+#' color.mean(colors)
+#' }
+#'
+#' @seealso \code{\link{col2rgb}}, \code{\link{rgb}}
+#'
+#' @importFrom utils try
+#' @importFrom magrittr %>%
+#' @importFrom rutils verify
+#' @importFrom stats rowMeans
+color.mean = function(...) {
+  mn = (try(c(...) %>% col2rgb, silent = TRUE) %>%
           verify(err_msg = 'Invalid colors given! Cannot convert to rgb.', err_src = 'rutils::color.mean') %>%
-          rowMeans)/255
+          rowMeans) / 255
   rgb(red = mn['red'], green = mn['green'], blue = mn['blue'])
 }
 
@@ -1743,11 +1856,44 @@ chif = function(a, x, y){
   if (a) return(x) else {return(y)}
 }
 
+#' Extend or Trim Character String
+#'
+#' This function extends or trims a character string to a specified length by adding or removing characters.
+#'
+#' @param s Character string to be extended or trimmed.
+#' @param n Desired length of the resulting string.
+#' @param fillChar Character to be used for filling when extending the string. Default is space (' ').
+#' @param left Logical. If TRUE, the extension or trimming is applied on the left side; if FALSE, on the right side.
+#'
+#' @return Extended or trimmed character string.
+#'
 #' @export
-extend.char = function (s, n, fillChar = ' ', left = T){
+#'
+#' @examples
+#' \dontrun{
+#' # Extend a short string to a specified length
+#' extend.char("abc", 5)
+#'
+#' # Trim a long string to a specified length
+#' extend.char("abcdefgh", 5)
+#'
+#' # Extend a short string to a specified length on the right side
+#' extend.char("abc", 5, left = FALSE)
+#'
+#' # Trim a long string to a specified length on the right side
+#' extend.char("abcdefgh", 5, left = FALSE)
+#' }
+#'
+#' @importFrom base nchar
+#' @importFrom base substr
+#' @importFrom base paste0
+#' @importFrom magrittr %>%
+#' @importFrom rutils chif
+#' @importFrom rutils repeat.char
+extend.char = function(s, n, fillChar = ' ', left = TRUE) {
   M = nchar(s)
   return(ifelse(M >= n,
-                chif(left, substr(s,1,n), substr(s, M - n + 1,M)),
+                chif(left, substr(s, 1, n), substr(s, M - n + 1, M)),
                 chif(left, paste0(s, repeat.char(fillChar, n - nchar(s))), paste0(repeat.char(fillChar, n - M), s))))
 }
 
@@ -1820,12 +1966,31 @@ ladd = function(L, ...){
   return(L)
 }
 
+#' Clean List by Removing Empty Elements
+#'
+#' This function cleans a list by removing empty elements recursively.
+#'
+#' @param L List to be cleaned.
+#' @return The cleaned list with empty elements removed.
+#'
 #' @export
-list.clean = function(L){
+#'
+#' @examples
+#' \dontrun{
+#' # Clean a list by removing empty elements
+#' my_list <- list(1, list(), "a", list(c(2, 3)), NULL, list(NULL, "b"))
+#' list.clean(my_list)
+#' }
+#'
+#' @importFrom magrittr %>%
+#' @importFrom rutils is.empty
+list.clean = function(L) {
   i = 1
-  for (item in L){
-    if(inherits(item, 'list')){item %<>% list.clean}
-    if (item %>% is.empty){
+  for (item in L) {
+    if (inherits(item, 'list')) {
+      item %<>% list.clean
+    }
+    if (item %>% is.empty) {
       L[[i]] <- NULL
     } else {
       L[[i]] = item
@@ -1865,24 +2030,48 @@ list.clean = function(L){
   return(obj1)
 }
 
+#' Edit List by Modifying or Adding Elements
+#'
+#' This function edits a list by modifying or adding elements based on the provided edits.
+#'
+#' @param lst List to be edited.
+#' @param edits List containing modifications or additions. If names are provided in the edits, they are matched with the names in the original list for targeted editing.
+#' @param inject Logical. If TRUE, inject values into existing elements (when modifying) or add new elements (when adding) instead of overwriting. Default is FALSE.
+#' @return The edited list.
+#'
 #' @export
-list.edit = function(lst, edits, inject = F){
-  if(is.empty(lst)){lst = list()}
+#'
+#' @examples
+#' \dontrun{
+#' # Edit a list by modifying or adding elements
+#' original_list <- list(a = 1, b = list(c = 2, d = 3), e = "foo")
+#' edits <- list(b = list(d = 99), f = "bar")
+#' list.edit(original_list, edits)
+#' }
+#'
+#' @importFrom rutils is.empty
+#' @importFrom magrittr %>%
+list.edit = function(lst, edits, inject = FALSE) {
+  if (is.empty(lst)) {
+    lst = list()
+  }
+  
   nms = names(edits)
-  if(is.empty(nms)){
-    for(i in sequence(length(edits))){
-      if(inherits(edits[[i]], 'list') & (length(lst) >= i)){
+  
+  if (is.empty(nms)) {
+    for (i in seq_along(edits)) {
+      if (inherits(edits[[i]], 'list') && (length(lst) >= i)) {
         lst[[i]] %<>% list.edit(edits[[i]])
       } else {
         lst[[i]] <- edits[[i]]
       }
     }
   } else {
-    for(itm in nms){
-      if(inherits(edits[[itm]], 'list')){
+    for (itm in nms) {
+      if (inherits(edits[[itm]], 'list')) {
         lst[[itm]] %<>% list.edit(edits[[itm]])
       } else {
-        if(inject){
+        if (inject) {
           lst[[itm]] <- c(lst[[itm]], edits[[itm]])
         } else {
           lst[[itm]] <- edits[[itm]]
@@ -1890,6 +2079,7 @@ list.edit = function(lst, edits, inject = F){
       }
     }
   }
+  
   return(lst)
 }
 
@@ -1931,38 +2121,105 @@ rename.items = function(lst, ...){
   return(lst)
 }
 
+#' Convert Column to Rownames in a Data Frame
+#'
+#' This function converts a specified column in a data frame to rownames.
+#'
+#' @param df Data frame to be modified.
+#' @param colname Character. Name of the column to be used as rownames. Default is the first column.
+#' @param remove Logical. If TRUE, the specified column is removed from the data frame after being used as rownames. If FALSE, the column is retained. Default is TRUE.
+#' @return The modified data frame with the specified column as rownames.
+#'
 #' @export
-column2Rownames = function(df, colname = NULL, remove = T){
+#'
+#' @examples
+#' \dontrun{
+#' # Convert a column to rownames in a data frame
+#' my_df <- data.frame(ID = c("A", "B", "C"), Value = c(10, 20, 30))
+#' column2Rownames(my_df, colname = "ID")
+#' }
+#'
+#' @importFrom rutils verify
+#' @importFrom magrittr %>%
+column2Rownames = function(df, colname = NULL, remove = TRUE) {
   df %<>% as.data.frame
   nms = names(df)
   colname %<>% verify('character', domain = nms, default = names(df)[1], lengths = 1, varname = 'colname')
   ww = which(nms == colname)
-  df = df[!duplicated(df[, colname]),, drop = F] # can add option to summarize(aggregate) later
+  df = df[!duplicated(df[, colname]), , drop = FALSE] # can add option to summarize(aggregate) later
   rownames(df) <- df[, colname]
-  if(remove){return(df[, - ww, drop = F])} else {return(df)}
+  if (remove) {
+    return(df[, -ww, drop = FALSE])
+  } else {
+    return(df)
+  }
 }
 
+#' Convert Rownames to a Column in a Data Frame
+#'
+#' This function converts the rownames of a data frame to a specified column.
+#'
+#' @param df Data frame to be modified.
+#' @param colname Character. Name of the column to be used for rownames. Default is 'rownames'.
+#' @param colpos Numeric. Position where the new column should be placed. Default is 1 (first column).
+#' @return The modified data frame with the rownames moved to the specified column position.
+#'
 #' @export
-rownames2Column = function(df, colname = 'rownames', colpos = 1){
+#'
+#' @examples
+#' \dontrun{
+#' # Convert rownames to a column in a data frame
+#' my_df <- data.frame(ID = c("A", "B", "C"), Value = c(10, 20, 30), row.names = c("X", "Y", "Z"))
+#' rownames2Column(my_df, colname = "ID", colpos = 2)
+#' }
+#'
+#' @importFrom rutils verify
+#' @importFrom magrittr %>%
+rownames2Column = function(df, colname = 'rownames', colpos = 1) {
   nms = colnames(df) %>% verify(default = 'V' %++% as.character(1:ncol(df)))
   verify(colname, 'character', lengths = 1, varname = 'colname')
-  df  = df[, nms != colname, drop = F]
-  m   = ncol(df)
+  df = df[, nms != colname, drop = FALSE]
+  m = ncol(df)
   assert(colpos <= m + 1, "Maximum value for colpos is " %++% (m + 1))
-  df %<>% cbind(rownames(df), stringsAsFactors = F)
+  df %<>% cbind(rownames(df), stringsAsFactors = FALSE)
   colnames(df) <- c(nms, colname)
   rownames(df) <- NULL
-  if (colpos == m + 1){return(df)}
-  if (colpos == 1){return(df[, c(m + 1, 1:m)])}
-  else {return(df[c(1:(colpos-1), m + 1, colpose:m)])}
+  if (colpos == m + 1) {
+    return(df)
+  }
+  if (colpos == 1) {
+    return(df[, c(m + 1, 1:m)])
+  } else {
+    return(df[c(1:(colpos-1), m + 1, colpos:m)])
+  }
 }
 
+#' Remove Rows with Zero Values in Specified Columns
+#'
+#' This function removes rows from a matrix or data frame where specified columns have zero values.
+#' If the input argument is a vector it removes zero elements from it.
+#'
+#' @param M Matrix or data frame or vector to be modified.
+#' @param columns Numeric vector or character vector specifying the columns where zero values should be checked. If NULL, all columns are considered.
+#' @return The modified matrix or data frame with rows removed where specified columns have zero values.
+#'
 #' @export
-zero.omit = function(M, colname = NULL){
-  if(inherits(M, c('matrix', 'data.frame'))){
-    if(is.null(colname)){colname = M %>% ncol %>% sequence}
-    for (col in colname){
-      M = M[M[,col] != 0,, drop = F]
+#'
+#' @examples
+#' \dontrun{
+#' # Remove rows with zero values in specified columns
+#' my_matrix <- matrix(c(1, 0, 2, 3, 4, 0, 5, 6, 7), ncol = 3)
+#' zero.omit(my_matrix, columns = c(2, 3))
+#' }
+#'
+#' @importFrom base names
+zero.omit = function(M, columns = NULL) {
+  if (inherits(M, c('matrix', 'data.frame'))) {
+    if (is.null(colname)) {
+      colname = M %>% ncol %>% seq_len
+    }
+    for (col in colname) {
+      M = M[M[, col] != 0, , drop = FALSE]
     }
     return(M)
   }
@@ -2003,15 +2260,33 @@ na2value = function(v, val = 0){
 }
 
 
+#' Replace NA Values with Zero
+#'
+#' This function replaces NA values with zero in a vector or a WIDETABLE object.
+#'
+#' @param v Vector or WIDETABLE object to be modified.
+#' @return The modified vector or WIDETABLE object with NA values replaced by zero.
+#'
 #' @export
-na2zero = function(v){
-  if(inherits(v, 'WIDETABLE')){
+#'
+#' @examples
+#' \dontrun{
+#' # Replace NA values with zero in a numeric vector
+#' my_vector <- c(1, NA, 2, NA, 3, 4)
+#' na2zero(my_vector)
+#' }
+#' 
+#' @importFrom base is.na
+#' @importFrom base as.integer
+na2zero = function(v) {
+  if (inherits(v, 'WIDETABLE')) {
     v$fill_na_with(0, cols = colnames(v))
     return(v)
   }
   v[is.na(v)] <- as.integer(0)
   return(v)
 }
+
 
 #' @export
 zero2na = function(v){
@@ -2193,7 +2468,6 @@ col2Hex = function(color){
   rgb(red = col['red',], green = col['green',], blue = col['blue',], maxColorValue = 255)
 }
 
-
 #' @export
 is.holiday = function(d, holidays = c()){
   return((format(d, "%u") %in% c("6", "7")) | (d %in% holidays))
@@ -2300,7 +2574,6 @@ addTime <- function(ts, nt, units = 'hours', holidays = c()){
   
   return(out)
 }
-
 
 #' This function, changes the column names of the given table (data.frame) and checks for the column classes
 #'

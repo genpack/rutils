@@ -15,7 +15,8 @@
 
 
 #' @export
-column.shift.up <- function(A, col, k=1, keep.rows=FALSE){
+column.shift.up <- function(A, col, k = 1, keep.rows=FALSE){
+  A = as.data.frame(A)
   N = nrow(A)
   if(N == 0){return(A)}
   if(N > k){
@@ -30,7 +31,8 @@ column.shift.up <- function(A, col, k=1, keep.rows=FALSE){
 }
 
 #' @export
-column.shift.down <- function(A, col, k=1, keep.rows=FALSE){
+column.shift.down <- function(A, col, k = 1, keep.rows=FALSE){
+  A = as.data.frame(A)
   N = nrow(A)
   if(N == 0){return(A)}
   if(N > 1){
@@ -73,7 +75,8 @@ vect.shift.up <- function(v, k=1, keep.rows=FALSE){
 column.average.down <- function(A, col=1:dim(A)[2], k=1, keep.rows=FALSE){
   # For column(s) given as "col", each row is replaced by the moving average among
   # that row and "K" rows before that.
-  d=dim(A)
+  A = as.data.frame(A)
+  d = dim(A)
   n = d[1]
   m = d[2]
   V = A
@@ -152,13 +155,41 @@ vect.cumulative.backward = function(v, index = sequence(length(v)) %>% rev){
   v
 }
 
+# if early_call is true and location is less than win_size (early), then aggregator is applied on the smaller window from start to location 
+#' @export
+vect.sliding.backward = function(location, vector, win_size, fun, early_call = F){
+  if(location < win_size){
+    if(early_call){out = do.call(fun, args = list(vector[sequence(location)]))} else {out = NA}
+  } else {
+    out = do.call(fun, args = list(vector[(location - win_size + 1):location]))
+  }
+  return(out)
+}
+
+#' @export
+vect.sliding.forward = function(location, vector, win_size, fun, late_call = F){
+  N = length(vector)
+  if(N - location < win_size){
+    if(late_call){out = do.call(fun, args = list(vector[location:N]))} else {out = NA}
+  } else {
+    out = do.call(fun, args = list(vector[location:(location + win_size - 1)]))
+  }
+  return(out)
+}
+
+#' @export
+vect.cumulative.sliding = function(v, win_size = NULL, aggregator = sum, ...){
+  if(is.null(win_size)){win_size = length(v)}
+  length(v) %>% sequence %>% sapply(vect.sliding.backward, vector = v, win_size = win_size, fun = aggregator, ...)
+}
+
 
 #' @export
 column.cumulative.forward = function(tbl, col = 1, id_col = NULL, aggregator = cumsum){
   # if(is.null(id_col)){dup = tbl %>% nrow %>% sequence %>% setdiff(1)} else {dup = tbl %>% pull(id_col) %>% duplicated %>% which}
   for(j in col){
     # tbl[, j] <- tbl %>% pull(j) %>% vect.cumulative.forward(index = dup)
-    tbl[, j] <- tbl %>% pull(j) %>% ave(id = tbl %>% pull(id_col), FUN = aggregator)
+    tbl[[j]] <- tbl %>% pull(j) %>% ave(id = tbl %>% pull(id_col), FUN = aggregator)
   }
   tbl
 }  
@@ -187,10 +218,11 @@ regslope <- function(y){
 }
 
 #' @export
-column.regslope.down <- function(A, col=1:dim(A)[2], k=1, keep.rows=FALSE){
+column.regslope.down <- function(A, col=1:dim(A)[2], k = 1, keep.rows = FALSE){
   # For column(s) given as "col", each row is replaced by the slope of the lease squares (regression) line among
   # that row and "K" rows before that.
-  d=dim(A)
+  A = as.data.frame(A)
+  d = dim(A)
   n = d[1]
   m = d[2]
   V = A
@@ -209,8 +241,57 @@ column.regslope.down <- function(A, col=1:dim(A)[2], k=1, keep.rows=FALSE){
 }
 
 #' @export
-column.delta.up <- function(A, col=1:dim(A)[2], k=1, keep.rows=FALSE){
-  d=dim(A)
+column.aggregate.down <- function(A, col=1:dim(A)[2], k = 1, aggregator = mean, keep.rows=FALSE){
+  # For column(s) given as "col", each row is replaced by the slope of the lease squares (regression) line among
+  # that row and "K" rows before that.
+  A = as.data.frame(A)
+  d = dim(A)
+  n = d[1]
+  m = d[2]
+  V = A
+  for (j in col){
+    for (i in (k+1):n){
+      V[i, j] = aggregator(A[(i-k):i, j])
+    }
+  }
+  
+  if (keep.rows){
+    V[1:k, col] = NA
+    return(V)
+  } else {
+    return(V[(-1):(-k),])
+  }
+}
+
+#' @export
+column.aggregate.up <- function(A, col=1:dim(A)[2], k = 1, aggregator = mean, keep.rows=FALSE){
+  # For column(s) given as "col", each row is replaced by the moving average among
+  # that row and "K" rows after that.
+  
+  A = as.data.frame(A)
+  d = dim(A)
+  n = d[1]
+  m = d[2]
+  
+  V <- A
+  for (j in col){
+    for (i in 1:(n-k)){
+      V[i,j] = aggregator(A[i:(k + i), j])
+    }
+  }
+  if (keep.rows){
+    V[(n-k+1):n,col]=NA
+    return(V)
+  } else {
+    return(V[(-n+k-1):(-n),])
+  }
+}
+
+
+#' @export
+column.delta.up <- function(A, col = 1:dim(A)[2], k = 1, keep.rows = FALSE){
+  A = as.data.frame(A)
+  d = dim(A)
   n = d[1]
   m = d[2]
   
@@ -227,11 +308,12 @@ column.delta.up <- function(A, col=1:dim(A)[2], k=1, keep.rows=FALSE){
 }
 
 #' @export
-column.average.up <- function(A, col=1:dim(A)[2], k=1, keep.rows=FALSE){
+column.average.up <- function(A, col=1:dim(A)[2], k = 1, keep.rows = FALSE){
   # For column(s) given as "col", each row is replaced by the moving average among
   # that row and "K" rows after that.
   
-  d=dim(A)
+  A = as.data.frame(A)
+  d = dim(A)
   n = d[1]
   m = d[2]
   
@@ -312,11 +394,12 @@ vect.normalise <- function(v){
 }
 
 #' @export
-column.delta.down <- function(A, col=1:dim(A)[2], k=1, keep.rows=FALSE){
+column.delta.down <- function(A, col=1:dim(A)[2], k = 1, keep.rows=FALSE){
   # This function gets matrix "A" as input and finds the difference between its column(s) given
   # by argument "col" and its shifted down column(s)
   
-  d=dim(A)
+  A = as.data.frame(A)
+  d = dim(A)
   n = d[1]
   m = d[2]
   
