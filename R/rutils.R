@@ -162,7 +162,28 @@
 #' @include linalg.R
 #' @include tree.R
 
-#' @export
+#' Install and Load Packages
+#'
+#' This function installs and loads R packages. If the specified packages are not
+#' already installed, it attempts to install them from CRAN.
+#'
+#' @param ... Character vector of package names to be installed and loaded.
+#'
+#' @return NULL. The function is mainly used for its side effects of installing
+#' and loading packages.
+#'
+#' @examples
+#' \dontrun{
+#' # Install and load the "dplyr" and "ggplot2" packages
+#' support("dplyr", "ggplot2")
+#' }
+#'
+#' @seealso \code{\link{require}}, \code{\link{install.packages}}, \code{\link{library}}
+#'
+#' @importFrom assertthat assert
+#' @importFrom methods setOldClass
+#'
+#' @rdname support
 support = function(...) {
   packages = as.character(c(...))
   
@@ -184,8 +205,6 @@ support = function(...) {
     }
   }
 }
-
-library('magrittr')
 
 #' @export
 wdlabel  = c(Mon = 'Monday', Tue = 'Tuesday', Wed = 'Wednesday', Thu = 'Thursday', Fri = 'Friday', Sat = 'Saturday', Sun = 'Sunday')
@@ -1198,11 +1217,19 @@ feasible = function(v, range = NULL, excludes = NULL){
 #' \dontrun{
 #' # Find the index of the first feasible element in a vector
 #' vec <- c(1, 2, 0, 4, 5)
+<<<<<<< HEAD
 #' first.feasible(vec, range = c(2,5), excludes = 2)}
+=======
+#' first.feasible(vec, range = c(2,5), excludes = 2)
+>>>>>>> 12b627ab73d87bf176a0713ec55ec35bb3059c00
 #' [1] 4
 #'
 #' @seealso \code{\link{feasible}}
 #'
+<<<<<<< HEAD
+=======
+#' @importFrom base which
+>>>>>>> 12b627ab73d87bf176a0713ec55ec35bb3059c00
 first.feasible <- function(...) {
   w = which(feasible(...))
   if (length(w) == 0) {
@@ -1226,11 +1253,19 @@ first.feasible <- function(...) {
 #' \dontrun{
 #' # Find the index of the last feasible element in a vector
 #' vec <- c(1, 2, 0, 4, 5)
+<<<<<<< HEAD
 #' last.feasible(vec, range = c(2,5), excludes = 2)}
+=======
+#' last.feasible(vec, range = c(2,5), excludes = 2)
+>>>>>>> 12b627ab73d87bf176a0713ec55ec35bb3059c00
 #' [1] 5
 #'
 #' @seealso \code{\link{feasible}}
 #'
+<<<<<<< HEAD
+=======
+#' @importFrom base which
+>>>>>>> 12b627ab73d87bf176a0713ec55ec35bb3059c00
 last.feasible <- function(...){
   w = which(feasible(...))
   if (length(w) == 0){return(NA)} else {return(w[length(w)])}
@@ -1780,6 +1815,13 @@ vec2Col = function(v, base = c(red = 1, green = 1, blue = 1)){
 #'
 #' @seealso \code{\link{col2rgb}}, \code{\link{rgb}}
 #'
+<<<<<<< HEAD
+=======
+#' @importFrom utils try
+#' @importFrom magrittr %>%
+#' @importFrom rutils verify
+#' @importFrom stats rowMeans
+>>>>>>> 12b627ab73d87bf176a0713ec55ec35bb3059c00
 color.mean = function(...) {
   mn = (try(c(...) %>% col2rgb, silent = TRUE) %>%
           verify(err_msg = 'Invalid colors given! Cannot convert to rgb.', err_src = 'rutils::color.mean') %>%
@@ -1856,6 +1898,12 @@ chif = function(a, x, y){
 #' extend.char("abcdefgh", 5, left = FALSE)
 #' }
 #'
+<<<<<<< HEAD
+=======
+#' @importFrom base nchar
+#' @importFrom base substr
+#' @importFrom base paste0
+>>>>>>> 12b627ab73d87bf176a0713ec55ec35bb3059c00
 #' @importFrom magrittr %>%
 #' @importFrom rutils chif
 #' @importFrom rutils repeat.char
@@ -2181,6 +2229,10 @@ rownames2Column = function(df, colname = 'rownames', colpos = 1) {
 #' zero.omit(my_matrix, columns = c(2, 3))
 #' }
 #'
+<<<<<<< HEAD
+=======
+#' @importFrom base names
+>>>>>>> 12b627ab73d87bf176a0713ec55ec35bb3059c00
 zero.omit = function(M, columns = NULL) {
   if (inherits(M, c('matrix', 'data.frame'))) {
     if (is.null(colname)) {
@@ -2244,6 +2296,11 @@ na2value = function(v, val = 0){
 #' na2zero(my_vector)
 #' }
 #' 
+<<<<<<< HEAD
+=======
+#' @importFrom base is.na
+#' @importFrom base as.integer
+>>>>>>> 12b627ab73d87bf176a0713ec55ec35bb3059c00
 na2zero = function(v) {
   if (inherits(v, 'WIDETABLE')) {
     v$fill_na_with(0, cols = colnames(v))
