@@ -10,9 +10,11 @@ Description: This package provides a useful general library of functions in R.
   matrices and data.frames plus many functions for conversion, error handling and
   data verification.
 License: MIT
-LazyData: TRUE
+LazyData: FALSE
 Collate: 
+    'clust.R'
     'linalg.R'
     'tree.R'
     'rutils.R'
-RoxygenNote: 7.2.1
+RoxygenNote: 7.3.3
+Encoding: UTF-8

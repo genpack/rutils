@@ -7,13 +7,15 @@
 add_year(input_date, num_years = 1)
 }
 \arguments{
+\item{input_date}{(character): Given date \code{\%Y-\%m-\%d} format as character}
+
 \item{num_years}{(numeric or integer): Number of years to be added to the given date. It can be a negative number.}
 }
 \value{
 (character): date pointing to the same day and month of the input date with years added
 }
 \description{
-
+Adds a certain number of years to the given character date in \code{\%Y-\%m-\%d} format.
 }
 \examples{
 add_year('2012-06-11', 3)

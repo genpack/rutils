@@ -7,13 +7,15 @@
 add_month(input_date, num_months = 1)
 }
 \arguments{
+\item{input_date}{(character): Given date \code{\%Y-\%m-\%d} format as character}
+
 \item{num_months}{(numeric or integer): Number of months to be added to the given date. It can be a negative number.}
 }
 \value{
 (character): date pointing to the input date with added months
 }
 \description{
-
+Adds a certain number of months to the given character date in \code{\%Y-\%m-\%d} format.
 }
 \examples{
 add_month('2012-06-01', 3)
