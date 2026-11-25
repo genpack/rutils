@@ -158,15 +158,16 @@
 #   bestNumebr, toBeDeleted, casesToRemove, ...
 
 
+#' Install and load packages
+#'
+#' Install any named packages that are unavailable, then attach them to the
+#' current R session. This helper is intended for interactive use; package
+#' functions should declare dependencies in `DESCRIPTION` instead.
+#'
 #' @import magrittr
 #' @include linalg.R
 #' @include tree.R
 
-#' Install and Load Packages
-#'
-#' This function installs and loads R packages. If the specified packages are not
-#' already installed, it attempts to install them from CRAN.
-#'
 #' @param ... Character vector of package names to be installed and loaded.
 #'
 #' @return NULL. The function is mainly used for its side effects of installing
@@ -180,9 +181,8 @@
 #'
 #' @seealso \code{\link{require}}, \code{\link{install.packages}}, \code{\link{library}}
 #'
-#' @importFrom assertthat assert
-#' @importFrom methods setOldClass
 #'
+#' @export
 #' @rdname support
 support = function(...) {
   packages = as.character(c(...))
@@ -1217,19 +1217,11 @@ feasible = function(v, range = NULL, excludes = NULL){
 #' \dontrun{
 #' # Find the index of the first feasible element in a vector
 #' vec <- c(1, 2, 0, 4, 5)
-<<<<<<< HEAD
 #' first.feasible(vec, range = c(2,5), excludes = 2)}
-=======
-#' first.feasible(vec, range = c(2,5), excludes = 2)
->>>>>>> 12b627ab73d87bf176a0713ec55ec35bb3059c00
 #' [1] 4
 #'
 #' @seealso \code{\link{feasible}}
 #'
-<<<<<<< HEAD
-=======
-#' @importFrom base which
->>>>>>> 12b627ab73d87bf176a0713ec55ec35bb3059c00
 first.feasible <- function(...) {
   w = which(feasible(...))
   if (length(w) == 0) {
@@ -1253,19 +1245,11 @@ first.feasible <- function(...) {
 #' \dontrun{
 #' # Find the index of the last feasible element in a vector
 #' vec <- c(1, 2, 0, 4, 5)
-<<<<<<< HEAD
 #' last.feasible(vec, range = c(2,5), excludes = 2)}
-=======
-#' last.feasible(vec, range = c(2,5), excludes = 2)
->>>>>>> 12b627ab73d87bf176a0713ec55ec35bb3059c00
 #' [1] 5
 #'
 #' @seealso \code{\link{feasible}}
 #'
-<<<<<<< HEAD
-=======
-#' @importFrom base which
->>>>>>> 12b627ab73d87bf176a0713ec55ec35bb3059c00
 last.feasible <- function(...){
   w = which(feasible(...))
   if (length(w) == 0){return(NA)} else {return(w[length(w)])}
@@ -1677,7 +1661,7 @@ prettyDate = function(x){
 numerics = function(df){
   numer_classes = c('numeric', 'integer', 'double', 'difftime')
   if(inherits(df, 'WIDETABLE')){
-    return(df$meta %>% filter(class %in% numer_classes) %>% pull(column))
+    return(df$meta %>% dplyr::filter(class %in% numer_classes) %>% dplyr::pull(column))
   } else if(inherits(df, 'data.frame')){
     classes = sapply(df, class)
     return(classes[classes %in% numer_classes] %>% names)
@@ -1691,7 +1675,7 @@ numerics = function(df){
 nominals = function(df){
   nomin_classes = c('factor', 'character', 'logical', 'ordered', 'integer')
   if(inherits(df, 'WIDETABLE')){
-    return(df$meta %>% filter(class %in% nomin_classes) %>% pull(column))
+    return(df$meta %>% dplyr::filter(class %in% nomin_classes) %>% dplyr::pull(column))
   } else if(inherits(df, 'data.frame')){
     classes = sapply(df, class)
     return(classes[classes %in% nomin_classes] %>% names)
@@ -1815,13 +1799,6 @@ vec2Col = function(v, base = c(red = 1, green = 1, blue = 1)){
 #'
 #' @seealso \code{\link{col2rgb}}, \code{\link{rgb}}
 #'
-<<<<<<< HEAD
-=======
-#' @importFrom utils try
-#' @importFrom magrittr %>%
-#' @importFrom rutils verify
-#' @importFrom stats rowMeans
->>>>>>> 12b627ab73d87bf176a0713ec55ec35bb3059c00
 color.mean = function(...) {
   mn = (try(c(...) %>% col2rgb, silent = TRUE) %>%
           verify(err_msg = 'Invalid colors given! Cannot convert to rgb.', err_src = 'rutils::color.mean') %>%
@@ -1898,15 +1875,7 @@ chif = function(a, x, y){
 #' extend.char("abcdefgh", 5, left = FALSE)
 #' }
 #'
-<<<<<<< HEAD
-=======
-#' @importFrom base nchar
-#' @importFrom base substr
-#' @importFrom base paste0
->>>>>>> 12b627ab73d87bf176a0713ec55ec35bb3059c00
 #' @importFrom magrittr %>%
-#' @importFrom rutils chif
-#' @importFrom rutils repeat.char
 extend.char = function(s, n, fillChar = ' ', left = TRUE) {
   M = nchar(s)
   return(ifelse(M >= n,
@@ -2000,7 +1969,6 @@ ladd = function(L, ...){
 #' }
 #'
 #' @importFrom magrittr %>%
-#' @importFrom rutils is.empty
 list.clean = function(L) {
   i = 1
   for (item in L) {
@@ -2066,7 +2034,6 @@ list.clean = function(L) {
 #' list.edit(original_list, edits)
 #' }
 #'
-#' @importFrom rutils is.empty
 #' @importFrom magrittr %>%
 list.edit = function(lst, edits, inject = FALSE) {
   if (is.empty(lst)) {
@@ -2156,7 +2123,6 @@ aggr = function(df, id_cols = NULL, value_cols = NULL, func = 'mean', vf = T){
 #' column2Rownames(my_df, colname = "ID")
 #' }
 #'
-#' @importFrom rutils verify
 #' @importFrom magrittr %>%
 column2Rownames = function(df, colname = NULL, remove = TRUE) {
   df %<>% as.data.frame
@@ -2190,7 +2156,6 @@ column2Rownames = function(df, colname = NULL, remove = TRUE) {
 #' rownames2Column(my_df, colname = "ID", colpos = 2)
 #' }
 #'
-#' @importFrom rutils verify
 #' @importFrom magrittr %>%
 rownames2Column = function(df, colname = 'rownames', colpos = 1) {
   nms = colnames(df) %>% verify(default = 'V' %++% as.character(1:ncol(df)))
@@ -2229,13 +2194,9 @@ rownames2Column = function(df, colname = 'rownames', colpos = 1) {
 #' zero.omit(my_matrix, columns = c(2, 3))
 #' }
 #'
-<<<<<<< HEAD
-=======
-#' @importFrom base names
->>>>>>> 12b627ab73d87bf176a0713ec55ec35bb3059c00
 zero.omit = function(M, columns = NULL) {
   if (inherits(M, c('matrix', 'data.frame'))) {
-    if (is.null(colname)) {
+    if (is.null(columns)) {
       colname = M %>% ncol %>% seq_len
     }
     for (col in colname) {
@@ -2296,11 +2257,6 @@ na2value = function(v, val = 0){
 #' na2zero(my_vector)
 #' }
 #' 
-<<<<<<< HEAD
-=======
-#' @importFrom base is.na
-#' @importFrom base as.integer
->>>>>>> 12b627ab73d87bf176a0713ec55ec35bb3059c00
 na2zero = function(v) {
   if (inherits(v, 'WIDETABLE')) {
     v$fill_na_with(0, cols = colnames(v))
@@ -2641,11 +2597,11 @@ nameColumns = function(dataset, columns, classes = NULL, convert = T){
     classes %<>% verify('list') %>% list.extract(names(classes) %^% colnames(dataset))
     for(i in names(classes)){
       e = classes[[i]]
-      correct = dataset %>% pull(i) %>% inherits(e)
+      correct = dataset %>% dplyr::pull(i) %>% inherits(e)
       if(!correct){
         ermsg = 'Column ' %++% i %++% ' is expected to be of class ' %++% paste(e, collapse = ' or ') %++% '. Was class ' %++% paste(class(dataset[, i]), collapse = ' --> ') %++% '!'
         if(convert){
-          dataset[, i] <- try(dataset %>% pull(i) %>% coerce(e[1]), silent = T) %>% verify(e, err_msg = ermsg %++% ' Coerction attempt failed.')
+          dataset[, i] <- try(dataset %>% dplyr::pull(i) %>% coerce(e[1]), silent = T) %>% verify(e, err_msg = ermsg %++% ' Coerction attempt failed.')
         } else {
           assert(FALSE, ermsg)
         }
@@ -2825,13 +2781,13 @@ table.unlist = function(df){
   colnames(df) %>% sapply(function(x) df[,x] %>% class) %>% unlist -> classes
   ctc = names(classes)[which(classes == 'list')] # ctc: columns to convert
   for(col in ctc){
-    df %>% pull(col) %>% sapply(function(x) length(x)) -> l_col
+    df %>% dplyr::pull(col) %>% sapply(function(x) length(x)) -> l_col
     rtc = which(l_col != 1)
     if(length(rtc) > 0){
       df$newcol   <- NA
-      df$newcol[- rtc] <- df %>% pull(col) %>% unlist
+      df$newcol[- rtc] <- df %>% dplyr::pull(col) %>% unlist
       df[, col] <- df$newcol
-      df %<>% select(- newcol)
+      df %<>% dplyr::select(- newcol)
     } else {
       df[, col] %<>%  unlist
     }  
@@ -2840,12 +2796,12 @@ table.unlist = function(df){
 }
 
 rize = function(df){
-  df %>% ncol %>% sequence %>% sapply(function(i) class(df %>% pull(i))) -> classes
+  df %>% ncol %>% sequence %>% sapply(function(i) class(df %>% dplyr::pull(i))) -> classes
   for(i in which(classes == 'integer64')){
-    df[,i] <- df %>% pull(i) %>% as.integer
+    df[,i] <- df %>% dplyr::pull(i) %>% as.integer
   }
   for(i in which(classes == 'float64')){
-    df[,i] <- df %>% pull(i) %>% as.numeric
+    df[,i] <- df %>% dplyr::pull(i) %>% as.numeric
   }
   return(df %>% table.unlist)
 }

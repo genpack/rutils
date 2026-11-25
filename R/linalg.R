@@ -110,9 +110,9 @@ vect.feed.forward = function(v, index = sequence(length(v))){
 #' Input tbl is a table: data.frame, tibble or matrix
 #' @export
 column.feed.forward = function(tbl, col = 1, id_col = NULL){
-  if(is.null(id_col)){dup = tbl %>% nrow %>% sequence} else {dup = tbl %>% pull(id_col) %>% duplicated %>% which}
+  if(is.null(id_col)){dup = tbl %>% nrow %>% sequence} else {dup = tbl %>% dplyr::pull(id_col) %>% duplicated %>% which}
   for(j in col){
-    tbl[, j] <- tbl %>% pull(j) %>% vect.feed.forward(index = dup)
+    tbl[, j] <- tbl %>% dplyr::pull(j) %>% vect.feed.forward(index = dup)
   }
   tbl
 }  
@@ -132,9 +132,9 @@ vect.feed.backward = function(v, index = sequence(length(v)) %>% rev){
 #' Input tbl is a table: data.frame, tibble or matrix
 #' @export
 column.feed.backward = function(tbl, col = 1, id_col = NULL){
-  if(is.null(id_col)){dup = tbl %>% nrow %>% sequence %>% rev} else {dup = tbl %>% pull(id_col) %>% rev %>% duplicated %>% which; dup = nrow(tbl) - dup + 1}
+  if(is.null(id_col)){dup = tbl %>% nrow %>% sequence %>% rev} else {dup = tbl %>% dplyr::pull(id_col) %>% rev %>% duplicated %>% which; dup = nrow(tbl) - dup + 1}
   for(j in col){
-    tbl[, j] <- tbl %>% pull(j) %>% vect.feed.backward(index = dup)
+    tbl[, j] <- tbl %>% dplyr::pull(j) %>% vect.feed.backward(index = dup)
   }
   tbl
 }  
@@ -189,7 +189,7 @@ column.cumulative.forward = function(tbl, col = 1, id_col = NULL, aggregator = c
   # if(is.null(id_col)){dup = tbl %>% nrow %>% sequence %>% setdiff(1)} else {dup = tbl %>% pull(id_col) %>% duplicated %>% which}
   for(j in col){
     # tbl[, j] <- tbl %>% pull(j) %>% vect.cumulative.forward(index = dup)
-    tbl[[j]] <- tbl %>% pull(j) %>% ave(id = tbl %>% pull(id_col), FUN = aggregator)
+    tbl[[j]] <- tbl %>% dplyr::pull(j) %>% ave(id = tbl %>% dplyr::pull(id_col), FUN = aggregator)
   }
   tbl
 }  
@@ -199,7 +199,7 @@ column.cumulative.backward = function(tbl, col = 1, id_col = NULL, aggregator = 
   # if(is.null(id_col)){dup = tbl %>% nrow %>% sequence %>% rev} else {dup = tbl %>% pull(id_col) %>% rev %>% duplicated %>% which; dup = nrow(tbl) - dup + 1}
   for(j in col){
     # tbl[, j] <- tbl %>% pull(j) %>% vect.cumulatiive.backward(index = dup)
-    tbl[, j] <- tbl %>% pull(j) %>% rev %>% ave(id = tbl %>% pull(id_col) %>% rev, FUN = aggregator) %>% rev
+    tbl[, j] <- tbl %>% dplyr::pull(j) %>% rev %>% ave(id = tbl %>% dplyr::pull(id_col) %>% rev, FUN = aggregator) %>% rev
     
   }
   tbl
