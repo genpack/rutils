@@ -136,6 +136,7 @@
 # 3.2.4     14 June 2022       Function expmean() added.
 # 3.2.5     16 June 2022       Function list.replace() added.
 # 3.2.6     07 March 2023      Function backsum_p2() added.
+# 3.2.7     25 November 2026   Operator %^% fixed: matrix branch no longer recurses into itself (now calls expm::`%^%`), factors handled like %U%.
 # --------------------------------------------
 
 
@@ -1390,14 +1391,29 @@ repeat.col <- function(v, n){
   unique(c(obj1, obj2))
 }
 
+#' Set intersection or matrix power
+#'
+#' For a matrix \code{obj1}, returns the matrix power \code{obj1^obj2} using
+#' \code{expm::\%^\%} (package \pkg{expm} must be installed). For any other
+#' input, returns the intersection of the two sets; factors are compared as
+#' character vectors.
+#'
+#' @param obj1 A vector, factor or square matrix.
+#' @param obj2 A vector or factor; or a single integer power when \code{obj1} is a matrix.
+#' @return The intersection of \code{obj1} and \code{obj2}, or the matrix power.
+#' @examples
+#' c('a', 'b', 'c') \%^\% c('b', 'c', 'd')   # "b" "c"
 #' @export
 '%^%' = function(obj1, obj2){
   if(inherits(obj1, 'matrix')){
-    library(expm)
-    obj1 %^% obj2
-  } else {
-    intersect(obj1, obj2)
+    if(!requireNamespace('expm', quietly = TRUE)){
+      stop("Package 'expm' is required for matrix power. Please install it.", call. = FALSE)
+    }
+    return(expm::`%^%`(obj1, obj2))
   }
+  if(inherits(obj1, 'factor')){obj1 = as.character(obj1)}
+  if(inherits(obj2, 'factor')){obj2 = as.character(obj2)}
+  return(intersect(obj1, obj2))
 }
 
 #' @export
