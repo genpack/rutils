@@ -136,7 +136,7 @@
 # 3.2.4     14 June 2022       Function expmean() added.
 # 3.2.5     16 June 2022       Function list.replace() added.
 # 3.2.6     07 March 2023      Function backsum_p2() added.
-# 3.2.7     25 November 2026   Operator %^% fixed: matrix branch no longer recurses into itself (now calls expm::`%^%`), factors handled like %U%.
+# 3.2.7     25 November 2026   Operator %^% fixed: matrix branch no longer recurses into itself (now calls expm::`%^%`), factors handled like %U%. Function verify() fixed: fix = TRUE with names_identical now uses the object's names instead of the base names() function.
 # --------------------------------------------
 
 
@@ -523,11 +523,11 @@ verify <- function(var, allowed = NULL, domain = NULL, lengths = NULL, dims = NU
     if(fix){
       fail = F
       if(var %>% dim %>% length == 2){
-        var = var[, names %^% names_identical]
+        var = var[, colnames(var) %^% names_identical, drop = FALSE]
       } else if (inherits(var, 'list')){
-        var %<>% list.extract(names %^% names_identical)
+        var %<>% list.extract(names(var) %^% names_identical)
       } else {
-        var = var[names %^% names_identical]
+        var = var[names(var) %^% names_identical]
       }} else {
         fail = sum(!identical(sort(names(var)) , sort(as.character(names_identical))), na.rm = T) > 0
       }
