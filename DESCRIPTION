@@ -11,6 +11,13 @@ Description: This package provides a useful general library of functions in R.
   data verification.
 License: MIT
 LazyData: FALSE
+Imports:
+    dplyr,
+    lubridate,
+    magrittr,
+    stringr
+Suggests:
+    anytime
 Collate: 
     'clust.R'
     'linalg.R'
